@@ -299,6 +299,38 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 .side .panel-inner .chips button { width: auto; }
 .side .panel-inner .chips { justify-content: flex-start; }
 
+/* desktop: the beat & layers panel lives in a right-hand sidepane */
+html.dock-right { --desk-side-w: clamp(280px, 26vw, 360px); }
+html.dock-right:has(#dock.collapsed) { --desk-side-w: var(--rail-w); }
+html.dock-right main#stageWrap { right: var(--desk-side-w); }
+html.dock-right body.clean main#stageWrap { right: 0; }
+html.dock-right #top { right: var(--desk-side-w); }
+html.dock-right #dock { top: 0; bottom: 0; left: auto; right: 0; width: var(--desk-side-w); flex-direction: column-reverse;
+  gap: 0; padding: 0; border-top: 0; border-left: 1px solid var(--line); background: var(--panel);
+  -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.dock-right #dock .panel-head { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 10px; border-bottom: 1px solid var(--line); }
+html.dock-right #dock .panel-title { display: block; flex: 1 1 100%; }
+html.dock-right #dock .dock-tabs { flex: 1; min-width: 0; }
+html.dock-right #dock .dock-tabs button { flex: 1; justify-content: center; }
+html.dock-right #dock .panel-head .spacer { display: none; }
+html.dock-right #dock .panel-body { flex: 1 1 auto; min-height: 0; }
+html.dock-right #dock .panel-inner { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+html.dock-right #dock:not(.collapsed) .panel-inner { max-height: none; padding: 12px !important; overflow-y: auto; }
+html.dock-right #dock .panel-inner .row { flex-direction: column; align-items: stretch; gap: 8px; }
+html.dock-right #dock .panel-inner .sep, html.dock-right #dock .panel-inner .spacer { display: none; }
+html.dock-right #dock .panel-inner .group { width: 100%; }
+html.dock-right #dock .panel-inner .group .val { flex: 1; text-align: center; }
+html.dock-right #dock .panel-inner .group button.sq { width: 46px; flex: 0 0 auto; }
+html.dock-right #dock .panel-inner .row > button, html.dock-right #dock .panel-inner > button { width: 100%; justify-content: flex-start; }
+html.dock-right #dock .panel-inner .chips { justify-content: flex-start; }
+html.dock-right #dock .panel-inner .chips button { width: auto; }
+html.dock-right #dock .panel-inner #leds { margin-left: 0; }
+html.dock-right #dock.collapsed .panel-head { align-items: center; padding: calc(6px + env(safe-area-inset-top, 0px)) 6px; }
+html.dock-right #dock.collapsed .panel-head > :not(.panel-toggle):not(.rail-label):not(#railPlayBtn) { display: none; }
+html.dock-right #dock.collapsed #railPlayBtn { display: inline-flex; width: 46px; min-width: 0; padding: 0; justify-content: center; }
+html.dock-right #dock.collapsed .rail-label { display: block; writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); margin: 4px 0; }
+html.dock-right #dock.collapsed .panel-inner { padding-top: 0 !important; padding-bottom: 0 !important; }
+
 /* layout picker on the landing card */
 .layout-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 10px; }
 .layout-btn, html.mobile .layout-btn { height: auto; min-height: 138px; padding: 16px; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; white-space: normal; text-align: left; border-radius: 14px; }
@@ -381,7 +413,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
   </div></div>
   <div class="panel-head">
     <span class="panel-title">Beat &amp; layers</span>
-    <div class="dock-tabs" role="tablist" aria-label="Bottom panel">
+    <div class="dock-tabs" role="tablist" aria-label="Beat and mixer panels">
       <button id="beatTab" class="on" role="tab" aria-selected="true" aria-controls="beatPanel">Beat &amp; record</button>
       <button id="mixerTab" role="tab" aria-selected="false" aria-controls="mixerPanel">Mixer</button>
     </div>
@@ -400,7 +432,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <div class="layout-choice">
       <button class="layout-btn" data-layout="desktop">
         <b>Desktop</b>
-        <span>Mouse or trackpad, keyboard shortcuts, full-width control bars and the wide 16:9 stage.</span>
+        <span>Mouse or trackpad, keyboard shortcuts, the beat and mixer in a right-hand pane, and the wide 16:9 stage.</span>
       </button>
       <button class="layout-btn" data-layout="mobile">
         <b>Mobile</b>
@@ -476,7 +508,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Beat:</b> pick a style, then switch its parts on one at a time: kick, snare, hats, bass, chords. Bass and chords follow the key and tone at the top.</li>
       <li><b>Follow chords:</b> while the beat plays, every string retunes to the chord of the current bar, so whatever you play fits.</li>
       <li><b>Your layers:</b> press <b>Record a layer</b>, wait for the count, play a phrase. It loops, and you play the next layer on top. Tap a layer to mute it, × to remove it, <b>Undo</b> to remove the last one.</li>
-      <li><b>Mixer:</b> the bottom bar has two panels: <b>Beat &amp; record</b> and <b>Mixer</b>. The mixer has a fader for every added instrument, plus your playing, the beat and each layer. Pinch a fader and slide it with your hand; pinch the empty space and drag to scroll. <b>Export stems</b> lives in the Beat &amp; record panel and saves separate audio files.</li>
+      <li><b>Mixer:</b> the <b>Beat &amp; record</b> and <b>Mixer</b> panels sit in the bottom bar, or in a right-hand pane on desktop. The mixer has a fader for every added instrument, plus your playing, the beat and each layer. Pinch a fader and slide it with your hand; pinch the empty space and drag to scroll. <b>Export stems</b> lives in the Beat &amp; record panel and saves separate audio files.</li>
     </ul>
     </details>
     <details class="help-group"><summary>Recording and filming</summary>
@@ -983,7 +1015,7 @@ const state = {
   touches: new Map(),      // pointerId -> touch point, while touch play is on
   touchEdit: null,         // two-finger create/edit gesture in progress
   safeTop: 70, safeBottom: 560, safeLeft: 0, safeRight: 1280,
-  layout: 'desktop', side: false, ui: 1, pointerCoarse: false, shapeAuto: true,
+  layout: 'desktop', side: false, dockRight: false, ui: 1, pointerCoarse: false, shapeAuto: true,
   panels: { top: true, dock: true },
   dockView: 'beat',
   fps: 0,
@@ -3974,6 +4006,9 @@ function setDockView(view, opts = {}) {
 }
 function updateLayoutMode() {
   const root = document.documentElement;
+  const dockRight = layoutMode === 'desktop';
+  root.classList.toggle('dock-right', dockRight);
+  state.dockRight = dockRight;
   const side = layoutMode === 'mobile' && innerWidth > innerHeight && innerHeight <= 560;
   const wasSide = root.classList.contains('side');
   root.classList.toggle('side', side);
@@ -4040,8 +4075,11 @@ function layoutStage() {
   const cv = $('#stage');
   syncCanvasBacking();
   const compact = layoutMode === 'mobile';
-  const contain = Math.min(innerWidth / W, innerHeight / H);
-  const cover = Math.max(innerWidth / W, innerHeight / H);
+  const wrap = $('#stageWrap');
+  const availW = wrap ? wrap.clientWidth : innerWidth;
+  const availH = wrap ? wrap.clientHeight : innerHeight;
+  const contain = Math.min(availW / W, availH / H);
+  const cover = Math.max(availW / W, availH / H);
   let sc = contain;
   if (compact) {
     // cover keeps the camera and the bars reachable by hand, but only crop a little
@@ -4068,6 +4106,11 @@ function layoutStage() {
     state.safeTop = visTop; state.safeBottom = visBottom;
     state.safeLeft = Math.max(visLeft, clamp((top.right - r.left) * W / r.width, 0, W * 0.48));
     state.safeRight = Math.min(visRight, clamp((dock.left - r.left) * W / r.width, W * 0.52, W));
+  } else if (state.dockRight) {
+    state.safeTop = Math.max(visTop, clamp((top.bottom - r.top) * H / r.height, 0, H * 0.48));
+    state.safeBottom = visBottom;
+    state.safeLeft = visLeft;
+    state.safeRight = Math.min(visRight, clamp((dock.left - r.left) * W / r.width, 0, W));
   } else {
     state.safeTop = Math.max(visTop, clamp((top.bottom - r.top) * H / r.height, 0, H * 0.48));
     state.safeBottom = Math.min(visBottom, clamp((dock.top - r.top) * H / r.height, H * 0.52, H));
@@ -4084,6 +4127,13 @@ function layoutStage() {
     hint.style.maxWidth = Math.max(180, Math.round(dock.left - top.right - 24)) + 'px';
     toastEl.style.left = mid + 'px';
     toastEl.style.top = 'calc(12px + env(safe-area-inset-top, 0px))';
+  } else if (state.dockRight) {
+    const mid = Math.round(dock.left / 2);
+    hint.style.left = mid + 'px'; hint.style.top = 'auto';
+    hint.style.bottom = '24px';
+    hint.style.maxWidth = Math.max(180, Math.round(dock.left - 24)) + 'px';
+    toastEl.style.left = mid + 'px';
+    toastEl.style.top = Math.round(top.bottom + 14) + 'px';
   } else {
     const tall = state.shape === 'vertical';
     hint.style.left = '50%';
