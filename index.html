@@ -55,6 +55,11 @@ html.mobile .touch-only, html.coarse .touch-only, html.mobile #touchBtn, html.co
 #touchBtn { padding: 0; justify-content: center; }
 #touchBtn.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
 #touchBtn svg { display: block; }
+.info-box { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; margin: 4px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 194, 74, 0.08); font-size: 13px; line-height: 1.45; color: var(--mute); }
+.info-box b { color: var(--amber); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.info-box span::before { content: "· "; color: var(--amber); }
+.touch-only.info-box { display: none; }
+html.mobile .touch-only.info-box, html.coarse .touch-only.info-box { display: flex; }
 
 #playBtn { min-width: 96px; justify-content: center; }
 #playBtn i { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
@@ -344,6 +349,13 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <button id="startCam" class="primary">Start camera</button>
       <button id="startMouse">Play with the mouse instead</button>
       <button id="startTouch" class="touch-only">Play with touch</button>
+      <div id="touchInfoBox" class="touch-only info-box">
+        <b>Touch play controls</b>
+        <span>One finger sweeps a string to play it; several fingers play several strings at once.</span>
+        <span>Hold two or three fingers still, then spread them apart to add a string.</span>
+        <span>Hold two fingers on a string's badge and tap to change its instrument or tuning.</span>
+        <span>The finger icon in the top bar switches Touch play on and off.</span>
+      </div>
     </div>
     <div id="startStatus"></div>
     <p class="small" style="margin-top:10px">Use Chrome or Edge. The hand tracker loads from the internet the first time. Sit 40 to 80 cm from the camera with light on your hands.</p>
