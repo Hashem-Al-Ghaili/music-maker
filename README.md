@@ -15,6 +15,16 @@ A single-page, camera-tracked instrument that runs entirely in the browser.
 
 No camera? Choose "Play with the mouse instead" on the start screen.
 
+## Layouts
+
+The landing screen picks a layout from the screen: phones and tablets get **Mobile**, everything else keeps the original **Desktop** layout. Your choice is saved in the browser and can be changed later in **Settings → Switch layout**.
+
+- **Desktop** – full-width control bars, mouse and keyboard shortcuts, 16:9 stage.
+- **Mobile portrait** – controls fold into slim top and bottom handles. Tap a handle's chevron to open it; opening one closes the other so the stage stays usable. Touch targets, canvas labels and menus scale up, and the camera picture fills the screen.
+- **Mobile landscape** – the two bars become left and right rails. Tap a rail's chevron to slide it out; the stage keeps the middle.
+
+Append `#mobile`, `#desktop` or `#demo` to the URL to open a layout directly. `#demo` forces the desktop layout and runs the scripted hands without a camera.
+
 ## Notes
 
 - Use Chrome or Edge. The camera needs a secure (https) page, which GitHub Pages provides.

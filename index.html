@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d11">
 <title>String Mirror</title>
 <meta name="author" content="Hashem Al-Ghaili">
 <style>
@@ -12,9 +13,11 @@
   --font: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 * { box-sizing: border-box; }
+html { height: 100%; }
 html, body { margin: 0; height: 100%; background: #000; color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
+body { height: 100dvh; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
 #cam { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
-#stageWrap { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+#stageWrap { position: fixed; inset: 0; display: grid; place-items: center; justify-content: center; align-content: center; background: #000; overflow: hidden; }
 #stage { display: block; touch-action: none; cursor: crosshair; }
 
 .bar { position: fixed; left: 0; right: 0; z-index: 5; background: var(--panel); display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
@@ -130,25 +133,139 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
 #count.show { display: grid; animation: countpop 0.95s ease-out both; }
 @keyframes countpop { 0% { transform: scale(1.5); opacity: 0; } 15% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 1400px) { .brand { display: none; } }
+
+/* ───────── responsive shell: collapsible bars, mobile scaling, landscape side panels ───────── */
+:root { --bar-h: 52px; --dock-h: 60px; --rail-w: 58px; --side-w: min(320px, 44vw); }
+
+/* each bar is a fixed head plus a body that folds away */
+#top, #dock { padding: 0; gap: 0; align-items: stretch; }
+#top { flex-direction: column; }
+#dock { flex-direction: column; }
+
+.panel-head { display: flex; align-items: center; gap: 8px; min-height: var(--bar-h); padding: 4px 10px; flex: 0 0 auto; min-width: 0; }
+#top .panel-head { padding-top: calc(4px + env(safe-area-inset-top, 0px)); }
+#dock .panel-head { padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
+.panel-title { display: none; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
+.rail-label { display: none; }
+.panel-toggle { width: 44px; height: 44px; min-height: 44px; padding: 0; justify-content: center; flex: 0 0 auto; }
+.panel-toggle .chev { width: 9px; height: 9px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform 0.2s; }
+#top .panel-toggle .chev { transform: rotate(225deg); }
+#top.collapsed .panel-toggle .chev { transform: rotate(45deg); }
+#dock.collapsed .panel-toggle .chev { transform: rotate(225deg); }
+
+.panel-body { display: grid; grid-template-rows: 1fr; min-height: 0; transition: grid-template-rows 0.22s ease; }
+.panel-body > .panel-inner { min-height: 0; overflow: hidden; }
+.panel.collapsed .panel-body { grid-template-rows: 0fr; }
+.panel.collapsed .panel-inner { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+#top .panel-inner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 12px 10px; }
+#dock .panel-inner { display: flex; flex-direction: column; gap: 8px; padding: 4px 12px 10px; }
+#top:not(.collapsed) .panel-inner { max-height: calc(62dvh - var(--bar-h) - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; }
+#dock:not(.collapsed) .panel-inner { max-height: calc(58dvh - var(--dock-h) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; }
+
+#top .panel-head #recBtn, #top .panel-head #filmBtn { flex: 0 0 auto; }
+#dock .panel-head #playBtn { flex: 0 0 auto; }
+#dock .panel-head #layerBtn { flex: 0 1 auto; min-width: 0; }
+#dock .panel-head #layerLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dock .panel-head #mixBtn { flex: 0 0 auto; }
+
+/* phones: bigger controls, no desktop-only bits */
+html.mobile { font-size: 15px; }
+html.mobile button { height: 46px; padding: 0 13px; touch-action: manipulation; }
+html.mobile button.sq { width: 46px; }
+html.mobile .chips { gap: 8px; }
+html.mobile .lab { font-size: 12px; }
+html.mobile .brand { display: none; }
+html.mobile #leds { display: none; }
+html.mobile .val { min-width: 40px; }
+html.mobile .val.wide { min-width: 122px; }
+html.mobile .layer .x { width: 40px; }
+html.mobile #hint { font-size: 14px; padding: 10px 16px; max-width: calc(100vw - 24px); }
+html.mobile #toast { font-size: 14px; max-width: calc(100vw - 24px); }
+html.mobile #filmBar { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); }
+@media (max-width: 700px) {                     /* phone-sized screens get edge-to-edge dialogs */
+  html.mobile .modal { padding: 0; }
+  html.mobile .card, html.mobile .card.wide { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+}
+html.mobile .card h1 { font-size: 26px; }
+html.mobile .card h2 { font-size: 19px; }
+html.mobile .card .actions { position: sticky; bottom: 0; z-index: 1; background: #12151b; padding: 12px 0; margin-top: 14px; }
+html.mobile .card .actions button { flex: 1 1 100%; justify-content: center; }
+html.mobile .set { grid-template-columns: 1fr; gap: 6px; }
+html.mobile .set input[type=range] { margin-bottom: 12px; }
+html.mobile .set input[type=checkbox] { margin-bottom: 12px; }
+html.mobile .tiles { grid-template-columns: 1fr; }
+html.mobile .saverow { flex-direction: column; }
+html.mobile .saverow input { width: 100%; min-width: 0; }
+html.mobile .mrow { flex-wrap: wrap; }
+html.mobile .mrow .grow { flex: 1 1 100%; }
+html.mobile #takeVideo { max-height: 42dvh; }
+html.mobile .layout-choice { grid-template-columns: 1fr; }
+
+/* landscape phones: header to the left, mixer to the right */
+.side #top, .side #dock { top: 0; bottom: 0; width: var(--rail-w); flex-direction: column; transition: width 0.22s ease; }
+.side #top { left: 0; right: auto; border-right: 1px solid var(--line); border-bottom: 0; padding-left: env(safe-area-inset-left, 0px); }
+.side #dock { left: auto; right: 0; border-left: 1px solid var(--line); border-top: 0; padding-right: env(safe-area-inset-right, 0px); flex-direction: column-reverse; }
+.side #top.open, .side #dock.open { width: var(--side-w); }
+.side .panel-head { flex-direction: column; gap: 6px; padding: 6px; min-height: 0; }
+.side #top .panel-head { padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
+.side #dock .panel-head { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+.side .panel.collapsed .panel-head > :not(.panel-toggle):not(.rail-label) { display: none; }
+.side .panel.collapsed .rail-label { display: block; writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); margin: 4px 0; }
+.side .panel:not(.collapsed) .rail-label { display: none; }
+.side .panel:not(.collapsed) .panel-title { display: block; }
+.side #dock:not(.collapsed) .panel-title { display: none; }
+.side .panel:not(.collapsed) .panel-head { flex-direction: row; flex-wrap: wrap; }
+.side .panel:not(.collapsed) .panel-head .spacer { flex: 1; }
+.side .panel-body { flex: 1 1 auto; min-height: 0; }
+.side .panel-inner { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; padding: 4px 10px 12px !important; overflow-y: auto; }
+.side .panel:not(.collapsed) .panel-inner { max-height: none; }
+.side .panel.collapsed .panel-inner { overflow: hidden; }
+.side .panel-inner .row { flex-direction: column; align-items: stretch; gap: 8px; }
+.side .panel-inner .sep { display: none; }
+.side .panel-inner .spacer { display: none; }
+.side .panel-inner .group { width: 100%; }
+.side .panel-inner .group .val { flex: 1; text-align: center; }
+.side .panel-inner .group button.sq { width: 46px; flex: 0 0 auto; }
+.side .panel-inner > button, .side .panel-inner .row > button { width: 100%; justify-content: flex-start; }
+.side .panel-inner .chips button { width: auto; }
+.side .panel-inner .chips { justify-content: flex-start; }
+
+/* layout picker on the landing card */
+.layout-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 10px; }
+.layout-btn, html.mobile .layout-btn { height: auto; min-height: 138px; padding: 16px; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; white-space: normal; text-align: left; border-radius: 14px; }
+.layout-btn b { font-size: 19px; }
+.layout-btn span { font-size: 13px; font-weight: 500; line-height: 1.45; color: var(--mute); }
+.layout-btn.current { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.layout-btn.current::after { content: "Current"; align-self: flex-start; margin-top: auto; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--amber); border-radius: 999px; padding: 4px 10px; }
+#layoutDetected { color: var(--amber); font-weight: 600; min-height: 18px; }
 </style>
 </head>
 <body>
 <video id="cam" playsinline muted></video>
 <div id="stageWrap"><canvas id="stage" width="1280" height="720"></canvas></div>
 
-<header id="top" class="bar">
-  <div class="brand">String <b>Mirror</b></div>
-  <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
-  <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
-  <div class="spacer"></div>
-  <button id="shapeBtn" title="Stage shape: landscape 16:9 or vertical 9:16">16:9</button>
-  <button id="recMode" title="What the Record button captures: the picture with sound, or the sound alone">Video + sound</button>
-  <button id="recBtn"><span class="dot"></span><span id="recLabel">Record</span><span id="recTime"></span></button>
-  <button id="filmBtn" title="Hide the controls, count 3-2-1 and record">Film</button>
-  <button id="setupsBtn">Setups</button>
-  <button id="clearBtn">Clear</button>
-  <button id="helpBtn">Help</button>
-  <button id="setBtn">Settings</button>
+<header id="top" class="bar panel open">
+  <div class="panel-head">
+    <div class="brand">String <b>Mirror</b></div>
+    <span class="panel-title">Controls</span>
+    <button id="recBtn"><span class="dot"></span><span id="recLabel">Record</span><span id="recTime"></span></button>
+    <button id="filmBtn" title="Hide the controls, count 3-2-1 and record">Film</button>
+    <span class="spacer"></span>
+    <button id="topToggle" class="panel-toggle" aria-expanded="true" aria-controls="topBody" aria-label="Hide the controls" title="Show or hide the controls"><span class="chev"></span></button>
+    <span class="rail-label">Controls</span>
+  </div>
+  <div id="topBody" class="panel-body"><div class="panel-inner">
+    <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
+    <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
+    <div class="spacer"></div>
+    <button id="shapeBtn" title="Stage shape: landscape 16:9 or vertical 9:16">16:9</button>
+    <button id="recMode" title="What the Record button captures: the picture with sound, or the sound alone">Video + sound</button>
+    <button id="setupsBtn">Setups</button>
+    <button id="clearBtn">Clear</button>
+    <button id="helpBtn">Help</button>
+    <button id="setBtn">Settings</button>
+  </div></div>
 </header>
 <div id="filmBar"><span class="dot"></span><span id="filmTime">0:00</span><button id="filmStop">Stop</button><button id="cleanExit">Show controls</button></div>
 <div id="count" aria-hidden="true"></div>
@@ -156,27 +273,55 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
 <div id="hint"></div>
 <div id="toast" role="status"></div>
 
-<footer id="dock" class="bar">
-  <div class="row">
+<footer id="dock" class="bar panel open">
+  <div id="dockBody" class="panel-body"><div class="panel-inner">
+    <div class="row">
+      <span class="lab">Beat</span><div id="beatChips" class="chips"></div>
+      <div class="group"><span class="lab">Tempo</span><button id="bpmDown" class="sq" aria-label="Slower">−</button><span id="bpmVal" class="val"></span><button id="bpmUp" class="sq" aria-label="Faster">+</button></div>
+      <button id="followBtn" class="chip" title="Strings retune to the chord the beat is playing, so everything fits">Follow chords</button><span id="chordNow" class="val"></span>
+      <div id="leds" aria-hidden="true"></div>
+    </div>
+    <div class="row">
+      <span class="lab">Beat parts</span><div id="partChips" class="chips"></div>
+      <span class="sep"></span>
+      <span class="lab">Your layers</span>
+      <div class="group"><button id="barsDown" class="sq" aria-label="Shorter layer">‹</button><span id="barsVal" class="val mid"></span><button id="barsUp" class="sq" aria-label="Longer layer">›</button></div>
+      <button id="undoLayer" title="Remove the layer you added last">Undo</button>
+      <div id="layerChips" class="chips"></div>
+    </div>
+  </div></div>
+  <div class="panel-head">
+    <span class="panel-title">Mixer</span>
     <button id="playBtn"><i></i><span id="playLabel">Play</span></button>
-    <span class="lab">Beat</span><div id="beatChips" class="chips"></div>
-    <div class="group"><span class="lab">Tempo</span><button id="bpmDown" class="sq" aria-label="Slower">−</button><span id="bpmVal" class="val"></span><button id="bpmUp" class="sq" aria-label="Faster">+</button></div>
-    <button id="followBtn" class="chip" title="Strings retune to the chord the beat is playing, so everything fits">Follow chords</button><span id="chordNow" class="val"></span>
-    <div id="leds" aria-hidden="true"></div>
-  </div>
-  <div class="row">
-    <span class="lab">Beat parts</span><div id="partChips" class="chips"></div>
-    <span class="sep"></span>
-    <span class="lab">Your layers</span>
     <button id="layerBtn"><span class="dot"></span><span id="layerLabel">Record a layer</span></button>
-    <div class="group"><button id="barsDown" class="sq" aria-label="Shorter layer">‹</button><span id="barsVal" class="val mid"></span><button id="barsUp" class="sq" aria-label="Longer layer">›</button></div>
-    <button id="undoLayer" title="Remove the layer you added last">Undo</button>
     <button id="mixBtn" title="Volumes, and export of separate audio files">Mixer</button>
-    <div id="layerChips" class="chips"></div>
+    <span class="spacer"></span>
+    <button id="dockToggle" class="panel-toggle" aria-expanded="true" aria-controls="dockBody" aria-label="Hide the beat and layer controls" title="Show or hide the beat and layer controls"><span class="chev"></span></button>
+    <span class="rail-label">Mixer</span>
   </div>
 </footer>
 
-<div id="startModal" class="modal open">
+<div id="landingModal" class="modal open">
+  <div class="card">
+    <h1>String <b>Mirror</b></h1>
+    <p class="small" style="margin-bottom:10px">Created by: Hashem Al-Ghaili</p>
+    <p>Choose the layout that fits this screen.</p>
+    <div class="layout-choice">
+      <button class="layout-btn" data-layout="desktop">
+        <b>Desktop</b>
+        <span>Mouse or trackpad, keyboard shortcuts, full-width control bars and the wide 16:9 stage.</span>
+      </button>
+      <button class="layout-btn" data-layout="mobile">
+        <b>Mobile</b>
+        <span>Touch controls, bigger targets, bars that fold to the edges, and side panels in landscape.</span>
+      </button>
+    </div>
+    <p id="layoutDetected" class="small"></p>
+    <p class="small">You can switch later in Settings.</p>
+  </div>
+</div>
+
+<div id="startModal" class="modal">
   <div class="card">
     <h1>String <b>Mirror</b></h1>
     <p class="small" style="margin-bottom:10px">Created by: Hashem Al-Ghaili</p>
@@ -225,7 +370,8 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
     <ul>
       <li><b>Record:</b> records the performance. The button beside it switches between <b>Video + sound</b> and <b>Sound only</b>. Press Record again to stop, then save the video, or the audio as MP3 or WAV.</li>
       <li><b>Film:</b> hides every control, counts 3-2-1 and starts recording. Stop with the small button in the corner or the Esc key.</li>
-      <li><b>16:9 / 9:16:</b> switches the stage between landscape and vertical. Vertical uses the middle of the camera picture, so stand centred. Buttons beside the vertical stage need the mouse.</li>
+      <li><b>16:9 / 9:16:</b> switches the stage between landscape and vertical. Vertical uses the middle of the camera picture, so stand centred.</li>
+      <li><b>Phones:</b> the top and bottom bars fold to slim handles. Tap a chevron to open one at a time. In landscape they move to the left and right edges. Settings has a <b>Switch layout</b> button if the wrong one was picked.</li>
     </ul>
     <h3>If tracking struggles</h3>
     <ul>
@@ -250,7 +396,7 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
       <label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="1" step="0.02">
       <label for="sDebug">Show tracking data<small>Frame rate and pinch readings, for troubleshooting.</small></label><input id="sDebug" type="checkbox">
     </div>
-    <div class="actions"><button class="primary" data-close="setModal">Done</button></div>
+    <div class="actions"><button id="layoutSwitch">Switch layout</button><button class="primary" data-close="setModal">Done</button></div>
   </div>
 </div>
 
@@ -695,6 +841,9 @@ const own = (table, key) => typeof key === 'string' && Object.prototype.hasOwnPr
 
 const MAX_STRINGS = 12;
 const MAX_LAYERS = 8;
+const UI_KEY = 'string-mirror-ui-v1';
+let layoutMode = 'desktop';
+let layoutRaf = 0;
 
 const state = {
   key: 9,                  // A
@@ -711,7 +860,9 @@ const state = {
   mode: 'idle',            // idle | camera | mouse | demo
   hands: [null, null],
   mouse: { x: -1, y: -1, px: -1, py: -1, down: false, inside: false, drag: null },
-  safeTop: 70, safeBottom: 560,
+  safeTop: 70, safeBottom: 560, safeLeft: 0, safeRight: 1280,
+  layout: 'desktop', side: false, ui: 1, pointerCoarse: false, shapeAuto: true,
+  panels: { top: true, dock: true },
   fps: 0,
   counts: { plucks: 0, created: 0, clicks: 0 },
   mix: { live: 0.85, beat: 0.8 },
@@ -1769,13 +1920,32 @@ function openMenu(s, kind, fresh) {
   const items = menuItems(s, kind);
   const m = strMid(s), t = nowS();
   const place = (halfW, halfH) => {          // centre on the string's dot, kept clear of the bars and edges
-    const lo = state.safeTop + halfH + 8, hi = state.safeBottom - halfH - 8;
-    return { cx: clamp(m.x, halfW + 8, W - halfW - 8), cy: hi > lo ? clamp(m.y, lo, hi) : (lo + hi) / 2 };
+    const loY = state.safeTop + halfH + 8, hiY = state.safeBottom - halfH - 8;
+    const loX = state.safeLeft + halfW + 8, hiX = state.safeRight - halfW - 8;
+    const cx = hiX > loX ? clamp(m.x, loX, hiX) : (state.safeLeft + state.safeRight) / 2;
+    const cy = hiY > loY ? clamp(m.y, loY, hiY) : (state.safeTop + state.safeBottom) / 2;
+    return { cx, cy };
   };
   const base = { s, kind, fresh: !!fresh, title: MENU_TITLES[kind], opened: t, active: t };
-  if (kind === 'instrument') {               // a palette: six icon tiles to a row
-    const cols = 6, rows = Math.ceil(items.length / cols), tw = 96, th = 80, gap = 6, head = 52, pad = 14;
-    const pw = cols * tw + (cols - 1) * gap + pad * 2, ph = head + rows * th + (rows - 1) * gap + pad;
+  if (kind === 'instrument') {               // a palette: fewer, larger tiles on a phone
+    const ui = Math.max(1, state.ui);
+    const gap = state.shape === 'vertical' ? 8 : 6;
+    const head = Math.round(Math.max(52, 36 * ui));
+    const pad = Math.round(Math.max(14, 10 * ui));
+    let cols = state.shape === 'vertical' ? 4 : 6;
+    let tw = Math.round(Math.max(96, 72 * ui));
+    let th = Math.round(Math.max(80, 58 * ui));
+    const availW = Math.max(240, state.safeRight - state.safeLeft);
+    const availH = Math.max(240, state.safeBottom - state.safeTop);
+    while (cols > 3 && cols * tw + (cols - 1) * gap + pad * 2 > availW) cols--;
+    tw = Math.max(56, Math.min(tw, Math.floor((availW - (cols - 1) * gap - pad * 2) / cols)));
+    let rows = Math.ceil(items.length / cols);
+    let ph = head + rows * th + (rows - 1) * gap + pad;
+    if (ph > availH) {                       // tall vertical palette: keep it on the stage
+      th = Math.max(44, Math.floor((availH - head - (rows - 1) * gap - pad) / rows));
+      ph = head + rows * th + (rows - 1) * gap + pad;
+    }
+    const pw = cols * tw + (cols - 1) * gap + pad * 2;
     const { cx, cy } = place(pw / 2, ph / 2);
     const x0 = cx - pw / 2, y0 = cy - ph / 2;
     state.menu = Object.assign(base, { grid: true, cx, cy, x0, y0, pw, ph, R: Math.max(pw, ph) / 2,
@@ -1783,7 +1953,9 @@ function openMenu(s, kind, fresh) {
         x: x0 + pad + (i % cols) * (tw + gap) + tw / 2, y: y0 + head + Math.floor(i / cols) * (th + gap) + th / 2 })) });
     return;
   }
-  const R = items.length > 9 ? 150 : items.length > 7 ? 128 : 112;
+  const availW = state.safeRight - state.safeLeft, availH = state.safeBottom - state.safeTop;
+  const baseR = items.length > 9 ? 150 : items.length > 7 ? 128 : 112;
+  const R = Math.max(72, Math.min(baseR, availW / 2 - 52, availH / 2 - 44));
   const { cx, cy } = place(R + 46, R + 38);
   state.menu = Object.assign(base, { cx, cy, R,
     items: items.map((it, i) => {
@@ -1834,7 +2006,7 @@ function updateMenu(pointers, dt) {
   const M = state.menu;
   if (!M) return;
   const t = nowS();
-  const HIT = 36, DWELL = 0.8;
+  const HIT = Math.max(36, 24 * state.ui), DWELL = 0.8;
   let chosen = null;
   for (const it of M.items) {
     let over = false, pressed = false;
@@ -2019,11 +2191,11 @@ function pinchDown(h, t) {
   forgetPointer('h' + state.hands.indexOf(h) + '-');
   if (state.menu) { h.intent = 'menu'; return; }
   if (modalOpen()) { h.intent = 'tap'; return; }
-  const ep = nearestEndpoint(h.cursor, 36);
+  const ep = nearestEndpoint(h.cursor, Math.max(36, 16 * state.ui));
   if (ep) { h.intent = 'drag'; h.drag = ep; return; }
-  const dot = nearestDot(h.cursor, 34);
+  const dot = nearestDot(h.cursor, Math.max(34, 16 * state.ui));
   if (dot) { h.intent = 'dot'; h.dot = dot; return; }
-  const body = nearestBody(h.cursor, 16);
+  const body = nearestBody(h.cursor, Math.max(16, 8 * state.ui));
   if (body) { h.intent = 'grab'; h.grab = body; return; }
   h.intent = 'free';
 }
@@ -2109,12 +2281,13 @@ function initPointer() {
       if (!menuContains(p, 50)) closeMenu();
       m.drag = null; return;
     }
-    const ep = nearestEndpoint(p, 16);
+    const hit = px => Math.max(px, (state.pointerCoarse ? 24 : 12) * state.ui);
+    const ep = nearestEndpoint(p, hit(16));
     if (ep) { m.drag = { type: 'end', ep }; return; }
-    const dot = nearestDot(p, 15);
+    const dot = nearestDot(p, hit(15));
     if (dot) { m.drag = { type: 'dot', s: dot, from: p }; return; }
     if (e.shiftKey) { m.drag = { type: 'fx', from: p }; return; }       // Shift-drag: the air pad
-    const body = nearestBody(p, 7);
+    const body = nearestBody(p, hit(7));
     if (body) { m.drag = { type: 'grab', g: body }; return; }
     m.drag = { type: 'new', from: p };
   });
@@ -2233,7 +2406,8 @@ const FONT = '"Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif';
 let g = null;
 
 function label(text, x, y, size, color, align = 'center', weight = 600, outline = true) {
-  g.font = `${weight} ${size}px ${FONT}`;
+  const fs = Math.max(size, 10 * state.ui);   // keep text legible when the stage is shown small
+  g.font = `${weight} ${fs}px ${FONT}`;
   g.textAlign = align; g.textBaseline = 'middle';
   if (outline) { g.lineWidth = 3.5; g.strokeStyle = 'rgba(6,8,12,0.78)'; g.lineJoin = 'round'; g.strokeText(text, x, y); }
   g.fillStyle = color; g.fillText(text, x, y);
@@ -2269,6 +2443,7 @@ function drawString(s, t) {
   const age = t - s.vib.t0, amp = s.vib.amp * Math.exp(-age * 3.0);
   const live = amp > 0.35;
   const n = zoneCount(s);
+  const U = Math.max(1, state.ui);                       // canvas units per CSS pixel
 
   // a pulled string runs taut through the point it is held at
   const pl = s.pull, px = pl ? s.a.x + dx * pl.u + (dy / L) * pl.d : 0, py = pl ? s.a.y + dy * pl.u - (dx / L) * pl.d : 0;
@@ -2298,10 +2473,10 @@ function drawString(s, t) {
     trace(-1); g.stroke(); trace(0.55); g.stroke(); trace(-0.55); g.stroke();
   }
   g.restore();
-  trace(1); g.strokeStyle = IVORY; g.lineWidth = 1.8; g.stroke();
+  trace(1); g.strokeStyle = IVORY; g.lineWidth = Math.max(1.8, 1.25 * U); g.stroke();
 
   if (pl) {
-    g.fillStyle = col; g.beginPath(); g.arc(px, py, 5, 0, 7); g.fill();
+    g.fillStyle = col; g.beginPath(); g.arc(px, py, Math.max(5, 3.5 * U), 0, 7); g.fill();
     if (s.bend) label((s.bend > 0 ? '+' : '−') + (Math.abs(s.bend) / 100).toFixed(1) + ' st', px + nx * 24, py + ny * 24, 13, col, 'center', 700);
   }
   // the note just played lights up its stretch of string
@@ -2313,38 +2488,39 @@ function drawString(s, t) {
   }
 
   // note ticks and end caps
-  g.strokeStyle = 'rgba(251,246,233,0.6)'; g.lineWidth = 1.2;
+  const tick = Math.max(5, 4 * U), cap = Math.max(10, 8 * U);
+  g.strokeStyle = 'rgba(251,246,233,0.6)'; g.lineWidth = Math.max(1.2, 0.9 * U);
   g.beginPath();
   for (let z = 1; z < n; z++) {
     const x = s.a.x + dx * z / n, y = s.a.y + dy * z / n;
-    g.moveTo(x - nx * 5, y - ny * 5); g.lineTo(x + nx * 5, y + ny * 5);
+    g.moveTo(x - nx * tick, y - ny * tick); g.lineTo(x + nx * tick, y + ny * tick);
   }
   g.stroke();
-  g.strokeStyle = IVORY; g.lineWidth = 2.2;
+  g.strokeStyle = IVORY; g.lineWidth = Math.max(2.2, 1.6 * U);
   g.beginPath();
-  for (const e of [s.a, s.b]) { g.moveTo(e.x - nx * 10, e.y - ny * 10); g.lineTo(e.x + nx * 10, e.y + ny * 10); }
+  for (const e of [s.a, s.b]) { g.moveTo(e.x - nx * cap, e.y - ny * cap); g.lineTo(e.x + nx * cap, e.y + ny * cap); }
   g.stroke();
   g.fillStyle = IVORY;
-  g.beginPath(); g.arc(s.a.x, s.a.y, 3.6, 0, 7); g.fill();
+  g.beginPath(); g.arc(s.a.x, s.a.y, Math.max(3.6, 2.6 * U), 0, 7); g.fill();
 
   // the dot: a badge carrying the instrument's icon
   const mx = (s.a.x + s.b.x) / 2, my = (s.a.y + s.b.y) / 2;
   const fresh = clamp(1 - (t - s.born) / 0.6, 0, 1);
-  const dr = 14 + fresh * 9 + (s.near ? 1.5 + Math.sin(t * 6) * 1.2 : 0);
+  const dr = Math.max(14 + fresh * 9 + (s.near ? 1.5 + Math.sin(t * 6) * 1.2 : 0), 16 * U);
   g.fillStyle = 'rgba(8,10,14,0.9)';
   g.beginPath(); g.arc(mx, my, dr, 0, 7); g.fill();
-  g.strokeStyle = hexA(col, s.near ? 1 : 0.75); g.lineWidth = 1.8;
+  g.strokeStyle = hexA(col, s.near ? 1 : 0.75); g.lineWidth = Math.max(1.8, 1.25 * U);
   g.beginPath(); g.arc(mx, my, dr, 0, 7); g.stroke();
-  drawIcon(s.inst, col, mx, my, 19);
+  drawIcon(s.inst, col, mx, my, dr * 1.32);
 
   if (state.settings.labels && (s.near || t - s.touched < 2.6) && !state.menu) {
-    label(stringLabel(s), mx + nx * 31, my + ny * 31, 13, col);
+    label(stringLabel(s), mx + nx * Math.max(31, 22 * U), my + ny * Math.max(31, 22 * U), 13, col);
     const names = [];
     for (let z = 0; z < n; z++) names.push(zoneInfo(s, z).label);
     const size = n > 11 ? 9.5 : 11;
     for (let z = 0; z < n; z++) {
       const u = (z + 0.5) / n;
-      label(names[z], s.a.x + dx * u - nx * 15, s.a.y + dy * u - ny * 15, size, 'rgba(251,246,233,0.9)', 'center', 500);
+      label(names[z], s.a.x + dx * u - nx * Math.max(15, 11 * U), s.a.y + dy * u - ny * Math.max(15, 11 * U), size, 'rgba(251,246,233,0.9)', 'center', 500);
     }
   }
 }
@@ -2364,7 +2540,7 @@ function drawFx() {
   const on = v => (v > 0.02 ? '#ffc24a' : 'rgba(251,246,233,0.75)');
   label('THIN' + (F.thin > 0.02 ? ' ' + Math.round(F.thin * 100) + '%' : ''), o.x, clamp(o.y - R - 14, state.safeTop + 14, H), 12, on(F.thin), 'center', 700);
   label('DARK' + (F.dark > 0.02 ? ' ' + Math.round(F.dark * 100) + '%' : ''), o.x, clamp(o.y + R + 14, 0, state.safeBottom - 14), 12, on(F.dark), 'center', 700);
-  label('ECHO' + (F.echo > 0.02 ? ' ' + Math.round(F.echo * 100) + '%' : ''), clamp(o.x + (p.x >= o.x ? R : -R), 46, W - 46), o.y - 14, 12, on(F.echo), 'center', 700);
+  label('ECHO' + (F.echo > 0.02 ? ' ' + Math.round(F.echo * 100) + '%' : ''), clamp(o.x + (p.x >= o.x ? R : -R), state.safeLeft + 46, state.safeRight - 46), o.y - 14, 12, on(F.echo), 'center', 700);
 }
 
 function drawPreview() {
@@ -2422,10 +2598,11 @@ function drawPalette(M, t) {
   g.strokeStyle = 'rgba(251,246,233,0.2)'; g.lineWidth = 1.2; g.stroke();
 
   const focus = M.items.find(it => it.hover) || M.items.find(it => it.on);
+  const U = Math.max(1, state.ui);
   const hx = M.x0 + 20, hy = M.y0 + 27;
   if (focus) {
-    drawIcon(focus.id, focus.color, hx + 12, hy, 28);
-    label(focus.label, hx + 34, hy + 1, 17, focus.color, 'left', 700, false);
+    drawIcon(focus.id, focus.color, hx + 12, hy, Math.max(28, 18 * U));
+    label(focus.label, hx + Math.max(34, 24 * U), hy + 1, 17, focus.color, 'left', 700, false);
   }
   label('CHOOSE AN INSTRUMENT', M.x0 + M.pw - 52, hy + 1, 11, 'rgba(243,239,230,0.6)', 'right', 600, false);
   const left = clamp(1 - (t - M.active) / menuIdle(M), 0, 1);       // time left before it closes by itself
@@ -2441,8 +2618,8 @@ function drawPalette(M, t) {
     g.fill();
     g.strokeStyle = it.on && !it.hover ? it.color : 'rgba(251,246,233,0.1)'; g.lineWidth = it.on ? 2 : 1;
     g.stroke();
-    drawIcon(it.id, it.hover ? INK : it.color, it.x, it.y - 9, 36);
-    label(it.label, it.x, it.y + 26, 11.5, it.hover ? INK : 'rgba(243,239,230,0.92)', 'center', it.hover || it.on ? 700 : 500, false);
+    drawIcon(it.id, it.hover ? INK : it.color, it.x, it.y - it.h * 0.11, Math.min(it.w, it.h) * 0.46);
+    label(it.label, it.x, it.y + it.h * 0.32, Math.min(13, it.w * 0.12), it.hover ? INK : 'rgba(243,239,230,0.92)', 'center', it.hover || it.on ? 700 : 500, false);
     if (it.dwell > 0) {                                              // hold-to-choose progress
       g.save(); rrect(x, y, it.w, it.h, 11); g.clip();
       g.fillStyle = INK; g.fillRect(x, y + it.h - 6, it.w * clamp(it.dwell / 0.8, 0, 1), 6);
@@ -2471,9 +2648,10 @@ function drawMenu(t) {
   g.beginPath(); g.arc(M.cx, M.cy - 14, 5, 0, 7); g.fill();
   label(M.title, M.cx, M.cy + 6, 15, IVORY, 'center', 700);
 
+  const ur = Math.max(18, 14 * state.ui);
   for (const it of M.items) {
     const x = lerp(M.cx, it.x, e), y = lerp(M.cy, it.y, e);
-    const r = (it.hover ? 23 : 18) * e;
+    const r = (it.hover ? ur * 1.28 : ur) * e;
     g.strokeStyle = 'rgba(251,246,233,0.12)'; g.lineWidth = 1;
     g.beginPath(); g.moveTo(M.cx + Math.cos(it.a) * 44, M.cy + Math.sin(it.a) * 44); g.lineTo(x - Math.cos(it.a) * r, y - Math.sin(it.a) * r); g.stroke();
     g.fillStyle = it.hover ? it.color : 'rgba(10,13,18,0.92)';
@@ -2498,6 +2676,7 @@ function drawMenu(t) {
 }
 
 function drawHands(t) {
+  const ur = Math.max(1, 0.9 * state.ui);
   for (const h of state.hands) {
     if (!h || !h.present || !h.lm) continue;
     const lm = h.lm;
@@ -2507,16 +2686,16 @@ function drawHands(t) {
       for (const [a, b] of HAND_BONES) { g.moveTo(lm[a].x, lm[a].y); g.lineTo(lm[b].x, lm[b].y); }
       g.stroke();
       g.fillStyle = 'rgba(251,246,233,0.75)';
-      for (let k = 0; k < 21; k++) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 2.1, 0, 7); g.fill(); }
+      for (let k = 0; k < 21; k++) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 2.1 * ur, 0, 7); g.fill(); }
     }
     // playing fingertip
     const tips = state.settings.allFingers ? [8, 12, 16, 20] : [8];
     g.strokeStyle = IVORY; g.lineWidth = 2;
-    for (const k of tips) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 8, 0, 7); g.stroke(); }
+    for (const k of tips) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 8 * ur, 0, 7); g.stroke(); }
     // pinch pointer: closes and fills as thumb and finger meet
     const sens = state.settings.pinchSens;
     const k = clamp(1 - (h.ratio - 0.3 * sens) / (0.7 * sens), 0, 1);
-    const r = lerp(17, 7, k);
+    const r = lerp(17, 7, k) * ur;
     g.strokeStyle = h.pinch ? '#ffc24a' : 'rgba(255,194,74,0.75)'; g.lineWidth = h.pinch ? 3 : 1.6;
     g.beginPath(); g.arc(h.cursor.x, h.cursor.y, r, 0, 7); g.stroke();
     if (h.pinch) { g.fillStyle = '#ffc24a'; g.beginPath(); g.arc(h.cursor.x, h.cursor.y, 5, 0, 7); g.fill(); }
@@ -2775,9 +2954,10 @@ function toggleClean() {
 }
 
 // ───────────────────────── stage shape: landscape or vertical ─────────────────────────
-function setShape(shape) {
+function setShape(shape, auto = false) {
   if (shape === state.shape) return;
-  if (rec.on) { toast('Stop the recording before changing the shape.'); return; }
+  if (rec.on) { if (!auto) toast('Stop the recording before changing the shape.'); return; }
+  if (!auto) state.shapeAuto = false;
   const [w, h] = shape === 'vertical' ? [720, 1280] : [1280, 720];
   const sx = w / W, sy = h / H;
   closeMenu(); state.preview = null; endFx();
@@ -3067,6 +3247,8 @@ function refreshUI() {
   $('#filmBar').classList.toggle('filming', film.on || film.counting);
   if (!rec.on) $('#filmTime').textContent = film.counting ? 'Get ready' : '0:00';
   $('#mixRows').innerHTML = mixRowsHTML();
+  const sw = $('#layoutSwitch');
+  if (sw) sw.textContent = layoutMode === 'mobile' ? 'Switch to desktop layout' : 'Switch to mobile layout';
 }
 
 function mixRowsHTML() {
@@ -3106,21 +3288,147 @@ function currentHint() {
   return '';
 }
 
+// ───────────────────────── layout modes: desktop, mobile, landscape rails ─────────────────────────
+function detectLayout() {
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  const touch = navigator.maxTouchPoints > 0;
+  const phoneish = Math.min(innerWidth, innerHeight) <= 560 || innerWidth <= 700;
+  const tabletish = (coarse || touch) && innerWidth <= 1180;
+  return phoneish || tabletish ? 'mobile' : 'desktop';
+}
+function defaultPanels() { return layoutMode === 'mobile' ? { top: false, dock: false } : { top: true, dock: true }; }
+function loadUI() { try { return JSON.parse(localStorage.getItem(UI_KEY) || 'null'); } catch (_) { return null; } }
+function saveUI() {
+  try { localStorage.setItem(UI_KEY, JSON.stringify({ layout: layoutMode, panels: state.panels })); } catch (_) {}
+}
+function panelOpen(name) { return !$('#' + name).classList.contains('collapsed'); }
+function setPanel(name, open, opts = {}) {
+  const panel = $('#' + name), body = $('#' + name + 'Body'), btn = $('#' + name + 'Toggle');
+  if (!panel || !body) return;
+  if (open && !opts.silent && layoutMode === 'mobile') {
+    const other = name === 'top' ? 'dock' : 'top';   // one panel at a time, so the stage stays usable
+    if (panelOpen(other)) { setPanel(other, false, { silent: true }); state.panels[other] = false; }
+  }
+  panel.classList.toggle('collapsed', !open);
+  panel.classList.toggle('open', open);
+  if (open) body.removeAttribute('inert'); else body.setAttribute('inert', '');
+  body.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (btn) {
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', (open ? 'Hide ' : 'Show ') + (name === 'top' ? 'the controls' : 'the beat and layer controls'));
+  }
+  if (!opts.silent) { state.panels[name] = open; saveUI(); layoutStage(); }
+}
+function updateLayoutMode() {
+  const root = document.documentElement;
+  const side = layoutMode === 'mobile' && innerWidth > innerHeight && innerHeight <= 560;
+  const wasSide = root.classList.contains('side');
+  root.classList.toggle('side', side);
+  state.side = side;
+  if (side && !wasSide) {                        // rotate to landscape: clear the stage to play
+    state.sideRemember = { top: panelOpen('top'), dock: panelOpen('dock') };
+    setPanel('top', false, { silent: true });
+    setPanel('dock', false, { silent: true });
+  } else if (!side && wasSide && state.sideRemember) {
+    state.panels = { top: !!state.sideRemember.top, dock: !!state.sideRemember.dock };
+    setPanel('top', state.panels.top, { silent: true });
+    setPanel('dock', state.panels.dock, { silent: true });
+    state.sideRemember = null;
+    saveUI();
+  }
+  if (state.shapeAuto) {
+    const want = layoutMode === 'desktop' ? 'landscape' : (innerHeight >= innerWidth ? 'vertical' : 'landscape');
+    if (want !== state.shape) setShape(want, true);
+  }
+}
+function applyLayout(mode, opts = {}) {
+  layoutMode = mode === 'mobile' ? 'mobile' : 'desktop';
+  state.layout = layoutMode;
+  const root = document.documentElement;
+  root.classList.toggle('mobile', layoutMode === 'mobile');
+  root.dataset.layout = layoutMode;
+  if (opts.resetPanels || !state.panels) state.panels = defaultPanels();
+  setPanel('top', !!state.panels.top, { silent: true });
+  setPanel('dock', !!state.panels.dock, { silent: true });
+  updateLayoutMode();
+  layoutStage();
+  refreshUI();
+  if (opts.save !== false) saveUI();
+}
+function openLanding() {
+  const detected = detectLayout();
+  $$('#landingModal [data-layout]').forEach(b => {
+    b.classList.toggle('current', b.dataset.layout === layoutMode);
+    b.classList.toggle('detected', b.dataset.layout === detected);
+  });
+  const nameOf = m => m === 'mobile' ? 'Mobile' : 'Desktop';
+  $('#layoutDetected').textContent = `Detected: ${nameOf(detected)}. Current: ${nameOf(layoutMode)}.`;
+  openModal('landingModal');
+}
+function scheduleLayout() {
+  if (layoutRaf) return;
+  layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; layoutStage(); });
+}
+function scheduleMode() {
+  if (layoutRaf) return;
+  layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; updateLayoutMode(); layoutStage(); });
+}
+
 function layoutStage() {
   const cv = $('#stage');
-  const sc = Math.min(innerWidth / W, innerHeight / H);
+  const compact = layoutMode === 'mobile';
+  const contain = Math.min(innerWidth / W, innerHeight / H);
+  const cover = Math.max(innerWidth / W, innerHeight / H);
+  let sc = contain;
+  if (compact) {
+    // cover keeps the camera and the bars reachable by hand, but only crop a little
+    const cw = W * cover, ch = H * cover;
+    const crop = Math.max((cw - innerWidth) / cw, (ch - innerHeight) / ch);
+    if (crop <= 0.32) sc = cover;
+  }
   cv.style.width = Math.round(W * sc) + 'px';
   cv.style.height = Math.round(H * sc) + 'px';
   const r = cv.getBoundingClientRect();
+  state.ui = r.width ? W / r.width : 1;
+  state.pointerCoarse = matchMedia('(pointer: coarse)').matches;
   const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
-  if (document.body.classList.contains('clean')) { state.safeTop = 0; state.safeBottom = H; return; }
-  state.safeTop = clamp((top.bottom - r.top) * H / r.height, 0, H * 0.3);
-  state.safeBottom = clamp((dock.top - r.top) * H / r.height, H * 0.58, H);
-  // on the narrow vertical stage the hint sits at the top, clear of the instrument palette
-  const hint = $('#hint'), tall = state.shape === 'vertical';
-  hint.style.bottom = tall ? 'auto' : Math.round(innerHeight - dock.top + 16) + 'px';
-  hint.style.top = tall ? Math.round(top.bottom + 12) + 'px' : 'auto';
-  $('#toast').style.top = Math.round(top.bottom + (tall ? 64 : 14)) + 'px';
+  const clean = document.body.classList.contains('clean');
+  // the canvas can be larger than the viewport (cover fit); keep menus inside the visible part
+  const visLeft = r.width ? clamp((0 - r.left) * W / r.width, 0, W) : 0;
+  const visRight = r.width ? clamp((innerWidth - r.left) * W / r.width, 0, W) : W;
+  const visTop = r.height ? clamp((0 - r.top) * H / r.height, 0, H) : 0;
+  const visBottom = r.height ? clamp((innerHeight - r.top) * H / r.height, 0, H) : H;
+  if (clean) {
+    state.safeTop = 0; state.safeBottom = H; state.safeLeft = 0; state.safeRight = W;
+  } else if (state.side) {
+    state.safeTop = visTop; state.safeBottom = visBottom;
+    state.safeLeft = Math.max(visLeft, clamp((top.right - r.left) * W / r.width, 0, W * 0.48));
+    state.safeRight = Math.min(visRight, clamp((dock.left - r.left) * W / r.width, W * 0.52, W));
+  } else {
+    state.safeTop = Math.max(visTop, clamp((top.bottom - r.top) * H / r.height, 0, H * 0.48));
+    state.safeBottom = Math.min(visBottom, clamp((dock.top - r.top) * H / r.height, H * 0.52, H));
+    state.safeLeft = visLeft; state.safeRight = visRight;
+  }
+  const hint = $('#hint'), toastEl = $('#toast');
+  if (clean) {
+    hint.style.left = '50%'; hint.style.top = 'auto'; hint.style.bottom = '24px'; hint.style.maxWidth = '92vw';
+    toastEl.style.left = '50%'; toastEl.style.top = '24px';
+  } else if (state.side) {
+    const mid = Math.round((top.right + dock.left) / 2);
+    hint.style.left = mid + 'px'; hint.style.top = 'auto';
+    hint.style.bottom = 'calc(16px + env(safe-area-inset-bottom, 0px))';
+    hint.style.maxWidth = Math.max(180, Math.round(dock.left - top.right - 24)) + 'px';
+    toastEl.style.left = mid + 'px';
+    toastEl.style.top = 'calc(12px + env(safe-area-inset-top, 0px))';
+  } else {
+    const tall = state.shape === 'vertical';
+    hint.style.left = '50%';
+    hint.style.bottom = tall ? 'auto' : Math.round(innerHeight - dock.top + 16) + 'px';
+    hint.style.top = tall ? Math.round(top.bottom + 12) + 'px' : 'auto';
+    hint.style.maxWidth = '92vw';
+    toastEl.style.left = '50%';
+    toastEl.style.top = Math.round(top.bottom + (tall ? 64 : 14)) + 'px';
+  }
 }
 
 function initUI() {
@@ -3183,6 +3491,19 @@ function initUI() {
   });
   on('helpBtn', () => openModal('helpModal'));
   on('setBtn', () => openModal('setModal'));
+  on('layoutSwitch', () => { closeModal('setModal'); openLanding(); });
+
+  // collapsible bars and the landing page's layout choice
+  $('#topToggle').addEventListener('click', () => setPanel('top', !panelOpen('top')));
+  $('#dockToggle').addEventListener('click', () => setPanel('dock', !panelOpen('dock')));
+  $('#landingModal').addEventListener('click', e => {
+    const b = e.target.closest('[data-layout]');
+    if (!b) return;
+    initAudio();
+    applyLayout(b.dataset.layout, { resetPanels: true });
+    closeModal('landingModal');
+    openModal('startModal');
+  });
 
   $('#beatChips').addEventListener('click', e => { const b = e.target.closest('[data-beat]'); if (b) { initAudio(); setBeat(b.dataset.beat); } });
   $('#partChips').addEventListener('click', e => {
@@ -3235,7 +3556,16 @@ function initUI() {
   });
   $('#startMouse').addEventListener('click', () => { initAudio(); state.mode = 'mouse'; closeModal('startModal'); });
 
-  addEventListener('resize', layoutStage);
+  addEventListener('resize', scheduleMode);
+  addEventListener('orientationchange', () => setTimeout(scheduleMode, 250));
+  if (window.visualViewport) visualViewport.addEventListener('resize', scheduleMode);
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(scheduleLayout);
+    ro.observe($('#top')); ro.observe($('#dock'));
+  }
+  ['top', 'dock'].forEach(n => $('#' + n).addEventListener('transitionend', e => {
+    if (e.propertyName === 'grid-template-rows' || e.propertyName === 'width') layoutStage();
+  }));
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
     if (e.code === 'Space') { e.preventDefault(); initAudio(); togglePlay(); }
@@ -3250,8 +3580,16 @@ function initUI() {
     }
   });
   refreshSetups();
-  layoutStage();
-  refreshUI();
+
+  // detect the screen, then restore the last layout and panel state if there is one
+  const saved = loadUI();
+  const detected = detectLayout();
+  layoutMode = saved && (saved.layout === 'mobile' || saved.layout === 'desktop') ? saved.layout : detected;
+  state.layout = layoutMode;
+  state.panels = saved && saved.panels
+    ? { top: !!saved.panels.top, dock: !!saved.panels.dock }
+    : defaultPanels();
+  applyLayout(layoutMode, { resetPanels: false });
 }
 
 // ── main loop ──
@@ -3416,7 +3754,23 @@ function boot() {
   initPointer();
   lastT = fpsT = nowS();
   requestAnimationFrame(frame);
-  if (location.hash.includes('demo')) { $('#startStatus').textContent = 'Demo: scripted hands are playing. Click anywhere if you hear nothing.'; runDemo(); }
+  const hash = location.hash.toLowerCase();
+  if (hash.includes('demo')) {
+    applyLayout('desktop', { resetPanels: true, save: false });
+    state.panels = { top: true, dock: true };
+    setPanel('top', true, { silent: true });
+    setPanel('dock', true, { silent: true });
+    setShape('landscape', true);
+    closeModal('landingModal'); closeModal('startModal');
+    $('#startStatus').textContent = 'Demo: scripted hands are playing. Click anywhere if you hear nothing.';
+    runDemo();
+  } else if (hash.includes('mobile') || hash.includes('desktop')) {
+    applyLayout(hash.includes('mobile') ? 'mobile' : 'desktop', { resetPanels: true });
+    closeModal('landingModal');
+    openModal('startModal');
+  } else {
+    openLanding();
+  }
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
     demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount };
 }
