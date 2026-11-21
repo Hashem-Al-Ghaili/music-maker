@@ -442,6 +442,9 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <label for="sDim">Darken the camera picture</label><input id="sDim" type="range" min="0" max="0.7" step="0.02">
       <label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="1" step="0.02">
       <label for="sDebug">Show tracking data<small>Frame rate and pinch readings, for troubleshooting.</small></label><input id="sDebug" type="checkbox">
+      <label for="sCamRes">Camera resolution<small>Low (640×480) reduces latency on phones. High (1280×720) for desktop.</small></label><select id="sCamRes"><option value="low">Low (640×480)</option><option value="high">High (1280×720)</option></select>
+      <label for="sMaxHands">Max hands tracked<small>1 is cheaper; 2 for two-hand play.</small></label><select id="sMaxHands"><option value="1">1</option><option value="2">2</option></select>
+      <label for="sBackend">Tracker backend<small>Auto tries GPU then CPU.</small></label><select id="sBackend"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
     </div>
     <div class="actions"><button id="layoutSwitch">Switch layout</button><button class="primary" data-close="setModal">Done</button></div>
   </div>
@@ -914,6 +917,9 @@ const state = {
     quantize: true,
     volume: 0.9,
     debug: false,
+    camRes: 'high',
+    maxHands: 2,
+    trackerBackend: 'auto',
   },
 };
 
@@ -2100,12 +2106,17 @@ const modalOpen = () => !!document.querySelector('.modal.open');
 async function loadTracker() {
   const vision = await import(TRACKER.bundle);
   const files = await vision.FilesetResolver.forVisionTasks(TRACKER.wasm);
+  const S = state.settings;
+  const backend = S.trackerBackend === 'cpu' ? 'CPU' : S.trackerBackend === 'gpu' ? 'GPU' : null;
+  const numHands = S.maxHands === 1 ? 1 : 2;
   const make = delegate => vision.HandLandmarker.createFromOptions(files, {
     baseOptions: { modelAssetPath: TRACKER.model, delegate },
-    runningMode: 'VIDEO', numHands: 2,
+    runningMode: 'VIDEO', numHands,
     minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5,
   });
-  if (TRACKER.delegate === 'CPU') { cam.tracker = await make('CPU'); cam.delegate = 'CPU'; return; }
+  if (backend === 'CPU') { cam.tracker = await make('CPU'); cam.delegate = 'CPU'; return; }
+  if (backend === 'GPU') { try { cam.tracker = await make('GPU'); cam.delegate = 'GPU'; return; } catch (e) { cam.tracker = await make('CPU'); cam.delegate = 'CPU'; return; } }
+  // auto
   try { cam.tracker = await make('GPU'); cam.delegate = 'GPU'; }
   catch (e) { cam.tracker = await make('CPU'); cam.delegate = 'CPU'; }
 }
@@ -2113,8 +2124,10 @@ async function loadTracker() {
 async function startCamera(setStatus) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('This browser cannot open a camera from here.');
   setStatus('Waiting for camera permission…');
+  const S = state.settings;
+  const low = S.camRes === 'low';
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: false,
+    video: { width: { ideal: low ? 640 : 1280 }, height: { ideal: low ? 480 : 720 }, facingMode: 'user' }, audio: false,
   });
   const v = cam.video = $('#cam');
   v.srcObject = stream;
@@ -2133,6 +2146,10 @@ function videoFit() {
 function readHands(t) {
   const v = cam.video;
   if (!cam.tracker || !v || v.readyState < 2 || v.currentTime === cam.lastVT) return null;
+  // throttle detection to ~30 fps on top of the video timestamp guard
+  if (!cam.lastDetectT) cam.lastDetectT = 0;
+  if (t - cam.lastDetectT < 1 / 30) return null;
+  cam.lastDetectT = t;
   cam.lastVT = v.currentTime;
   const res = cam.tracker.detectForVideo(v, performance.now());
   const f = videoFit();
@@ -3702,6 +3719,7 @@ function layoutStage() {
   state.ui = r.width ? W / r.width : 1;
   state.pointerCoarse = matchMedia('(pointer: coarse)').matches;
   document.documentElement.classList.toggle('coarse', state.pointerCoarse);
+  if (state.pointerCoarse) state.settings.camRes = 'low';
   const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
   const clean = document.body.classList.contains('clean');
   // the canvas can be larger than the viewport (cover fit); keep menus inside the visible part
@@ -3855,6 +3873,10 @@ function initUI() {
   bind('sSens', 'pinchSens'); bind('sFingers', 'fingerCount'); bind('sSkel', 'skeleton'); bind('sDim', 'dim'); bind('sLabels', 'labels');
   bind('sQuant', 'quantize'); bind('sDebug', 'debug');
   bind('sVol', 'volume', () => { if (audio.master) audio.master.gain.value = S.volume; });
+  // camera/tracker optimization settings
+  const camResEl = $('#sCamRes'); camResEl.value = S.camRes; camResEl.addEventListener('change', () => { S.camRes = camResEl.value; });
+  const maxHandsEl = $('#sMaxHands'); maxHandsEl.value = String(S.maxHands); maxHandsEl.addEventListener('change', () => { S.maxHands = +maxHandsEl.value; if (cam.tracker) { /* takes effect next load */ } });
+  const backendEl = $('#sBackend'); backendEl.value = S.trackerBackend; backendEl.addEventListener('change', () => { S.trackerBackend = backendEl.value; });
 
   // start screen
   const status = msg => { $('#startStatus').textContent = msg; };
