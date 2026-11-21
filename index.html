@@ -399,6 +399,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Menus:</b> point at a choice and hold still for a moment, or pinch it.</li>
       <li><b>Buttons:</b> put the amber ring on any button and do a quick pinch.</li>
       <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears. On a touch screen, hold two fingers still in open air and move them together; the active settings appear above nearby strings.</li>
+      <li><b>Playing fingers:</b> Settings chooses how many fingertips pluck - 1 (index only) up to 4 (index through pinky).</li>
     </ul>
     <h3>Touch screens</h3>
     <ul>
@@ -435,7 +436,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <h2>Settings</h2>
     <div class="set">
       <label for="sSens">Pinch sensitivity<small>Higher closes the pinch sooner. Lower needs fingers to touch.</small></label><input id="sSens" type="range" min="0.6" max="1.7" step="0.05">
-      <label for="sAll">Play with every fingertip<small>Off: only the index finger plucks.</small></label><input id="sAll" type="checkbox">
+      <label for="sFingers">Playing fingers<small>1 = index finger, up to 4 = index through pinky.</small></label><input id="sFingers" type="range" min="1" max="4" step="1">
       <label for="sQuant">Snap layers to the beat<small>Tidies the timing of what you record into a layer.</small></label><input id="sQuant" type="checkbox">
       <label for="sSkel">Show hand outline</label><input id="sSkel" type="checkbox">
       <label for="sLabels">Show note names on strings<small>Turn off for a cleaner picture when filming.</small></label><input id="sLabels" type="checkbox">
@@ -879,6 +880,8 @@ const UI_KEY = 'string-mirror-ui-v1';
 let layoutMode = 'desktop';
 let layoutRaf = 0;
 
+const playTips = () => [8, 12, 16, 20].slice(0, clamp(Math.round(state.settings.fingerCount), 1, 4));
+
 const state = {
   key: 9,                  // A
   scale: 'pentamin',
@@ -905,7 +908,7 @@ const state = {
   mix: { live: 0.85, beat: 0.8 },
   settings: {
     pinchSens: 1,
-    allFingers: false,
+    fingerCount: 1,
     skeleton: true,
     labels: true,
     dim: 0.28,
@@ -2234,8 +2237,7 @@ function updateHand(j, d, t) {
   // plucking with open fingers (paused while a pinch is closing or has just opened)
   h.plucking = !h.pinch && t - h.lastRelease > 0.25 && h.ratio > 0.34 * sens && !modalOpen();
   if (h.plucking) {
-    const tips = state.settings.allFingers ? [8, 12, 16, 20] : [8];
-    for (const k of tips) sweep(`h${j}-${k}`, lm[k], t);
+    for (const k of playTips()) sweep(`h${j}-${k}`, lm[k], t);
   }
 }
 
@@ -2948,7 +2950,7 @@ function drawHands(t) {
       for (let k = 0; k < 21; k++) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 2.1 * ur, 0, 7); g.fill(); }
     }
     // playing fingertip
-    const tips = state.settings.allFingers ? [8, 12, 16, 20] : [8];
+    const tips = playTips();
     g.strokeStyle = IVORY; g.lineWidth = 2;
     for (const k of tips) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 8 * ur, 0, 7); g.stroke(); }
     // pinch pointer: closes and fills as thumb and finger meet
@@ -3854,7 +3856,7 @@ function initUI() {
     if (el.type === 'checkbox') { el.checked = S[key]; el.addEventListener('change', () => { S[key] = el.checked; fn && fn(); }); }
     else { el.value = S[key]; el.addEventListener('input', () => { S[key] = +el.value; fn && fn(); }); }
   };
-  bind('sSens', 'pinchSens'); bind('sAll', 'allFingers'); bind('sSkel', 'skeleton'); bind('sDim', 'dim'); bind('sLabels', 'labels');
+  bind('sSens', 'pinchSens'); bind('sFingers', 'fingerCount'); bind('sSkel', 'skeleton'); bind('sDim', 'dim'); bind('sLabels', 'labels');
   bind('sQuant', 'quantize'); bind('sDebug', 'debug');
   bind('sVol', 'volume', () => { if (audio.master) audio.master.gain.value = S.volume; });
 

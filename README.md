@@ -34,7 +34,7 @@ With Touch play on, one finger sweeps across strings to pluck them, and several 
 - **Change a string** – hold two close fingers still on a string's badge and tap to open its instrument menu. Move them together to drag an end, bend a string, or work the air pad.
 - Holding two fingers still in open air and moving them together works the air pad (dark / thin / echo). Active FX values are shown as translucent badges above nearby strings.
 
-Tapping the finger icon again turns Touch play off and restores one-finger dragging for building and editing. The start screen shows the control summary right under **Play with touch**.
+Tapping the finger icon again turns Touch play off and restores one-finger dragging for building and editing. The start screen shows the control summary right under **Play with touch**. Settings has a **Playing fingers** slider from 1 (index only) to 4 (index through pinky).
 
 ## Layouts
 
