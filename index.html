@@ -9,7 +9,7 @@
 <style>
 :root {
   /* warm, tactile instrument palette — light text on deep walnut, amber as the lit accent */
-  --ink: #1a120c; --panel: rgba(30, 22, 16, 0.92); --card: #241a12; --line: rgba(246, 226, 198, 0.18);
+  --ink: #1a120c; --panel: rgba(30, 22, 16, 0.92); --dock-panel: rgba(24, 17, 12, 0.42); --card: #241a12; --line: rgba(246, 226, 198, 0.18);
   --text: #f8efe2; --mute: rgba(248, 239, 226, 0.70); --amber: #f0b455; --amber-hi: #f7c77e;
   --red: #e8624f; --mint: #86d9a8;
   --wood: #6b3f24; --wood-lo: #352317;
@@ -26,7 +26,9 @@ main#stageWrap { position: fixed; inset: 0; display: grid; place-items: center; 
 
 .bar { position: fixed; left: 0; right: 0; z-index: 5; background: var(--panel); box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.06); display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
 #top { top: 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-#dock { bottom: 0; border-top: 1px solid var(--line); flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px 12px; }
+#dock { bottom: 0; border-top: 1px solid rgba(246, 226, 198, 0.26); flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px 12px;
+  background: var(--dock-panel); -webkit-backdrop-filter: blur(8px) saturate(1.1); backdrop-filter: blur(8px) saturate(1.1);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .brand { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px; margin-right: 8px; white-space: nowrap; }
 .brand b { color: var(--amber); font-weight: 700; }
@@ -157,16 +159,25 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--amber); ju
 button.tile { height: auto; min-height: 64px; padding: 10px 14px; flex-direction: column; align-items: flex-start; gap: 3px; white-space: normal; text-align: left; }
 button.tile b { font-size: 15px; }
 button.tile span { font-size: 12.5px; font-weight: 500; color: var(--mute); line-height: 1.35; }
-.mrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
-.mrow .grow { flex: 1; min-width: 0; }
+.mix-head { margin: 10px 0 2px; color: var(--amber); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
+.mrow { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.mrow .grow { min-width: 0; }
 .mrow small { display: block; color: var(--mute); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mrow .val { min-width: 48px; }
-.mrow input[type=range] { flex: 1 1 100%; width: auto; min-width: 80px; }
+.mix-ctl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mix-ctl input[type=range] { flex: 1; min-width: 0; height: 30px; margin: 0; touch-action: pan-y; }
+.mix-ctl .val { min-width: 48px; text-align: right; }
+input[type=range].hand-hover { accent-color: var(--amber); outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 8px; }
+#handOverlay { position: fixed; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; }
+.hand-ring { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 2px solid rgba(255,194,74,0.75); border-radius: 50%;
+  transform: translate(-50%, -50%); display: none; }
+.hand-ring.on { display: block; }
+.hand-ring.pinched { border-width: 3px; border-color: #ffc24a; background: rgba(255,194,74,0.28); }
 .dock-tabs { display: flex; align-items: center; gap: 6px; }
 .dock-tabs button { font-size: 13px; }
 .dock-tabs button.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
 .dock-view.hide { display: none !important; }
 .mix-note { margin: 4px 0; color: var(--mute); font-size: 12.5px; line-height: 1.4; }
+#mixSliders { width: 100%; max-width: 560px; margin: 0 auto; }
 .saverow { display: flex; gap: 8px; margin: 14px 0 10px; flex-wrap: wrap; }
 input[type=text] { flex: 1; min-width: 180px; height: 46px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--text); font: inherit; }
 input[type=text]:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
@@ -253,8 +264,7 @@ html.mobile .set input[type=checkbox] { margin-bottom: 12px; }
 html.mobile .tiles { grid-template-columns: 1fr; }
 html.mobile .saverow { flex-direction: column; }
 html.mobile .saverow input { width: 100%; min-width: 0; }
-html.mobile .mrow { flex-wrap: wrap; }
-html.mobile .mrow .grow { flex: 1 1 100%; }
+html.mobile .mix-ctl input[type=range] { height: 34px; }
 html.mobile #takeVideo { max-height: 42dvh; }
 html.mobile .layout-choice { grid-template-columns: 1fr; }
 
@@ -319,7 +329,6 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
   <div id="topBody" class="panel-body"><div class="panel-inner">
     <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
     <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
-    <div class="group"><span class="lab">Repeat</span><button id="repeatBtn" class="sq" aria-pressed="true" aria-label="Toggle repeat while held">⟳</button></div>
     <div class="spacer"></div>
     <button id="recMode" aria-describedby="desc-recmode">Video + sound</button>
     <button id="setupsBtn">Setups</button>
@@ -333,6 +342,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 
 <div id="hint" role="status" aria-live="polite"></div>
 <div id="toast" role="status"></div>
+<div id="handOverlay" aria-hidden="true"></div>
 <div id="tipPop" hidden role="note" aria-label="Button help">
   <div><b>Film</b> — <span id="desc-film">hides the controls, counts 3-2-1, then records.</span></div>
   <div><b>Touch play</b> — <span id="desc-touch">one finger plucks a string; hold two close fingers, then spread them to add a string.</span></div>
@@ -362,11 +372,11 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
         <button id="undoLayer" aria-describedby="desc-undo">Undo</button>
         <div id="layerChips" class="chips"></div>
       </div>
+      <p class="mix-note">Stems are each beat part and each layer as its own WAV, plus a full mix, at the current tempo and key. Live playing is not included.</p>
+      <div class="row"><button id="stemsBtn" class="primary">Export stems (.zip)</button><span id="stemsNote" class="small status"></span></div>
     </div>
     <div id="mixerPanel" class="dock-view hide" role="tabpanel" aria-labelledby="mixerTab">
       <div id="mixSliders"></div>
-      <p class="mix-note">Stems are each beat part and each layer as its own WAV, plus a full mix, at the current tempo and key. Live playing is not included.</p>
-      <div class="row"><button id="stemsBtn" class="primary">Export stems (.zip)</button><span id="stemsNote" class="small status"></span></div>
     </div>
   </div></div>
   <div class="panel-head">
@@ -449,6 +459,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li>The amber ring between your thumb and index finger is your pointer. It closes as you pinch.</li>
       <li><b>Menus:</b> point at a choice and hold still for a moment, or pinch it.</li>
       <li><b>Buttons:</b> put the amber ring on any button and do a quick pinch.</li>
+      <li><b>Mixer:</b> pinch a volume slider and slide it to set the level; every added instrument has its own fader. Pinch the empty space around the faders and drag to scroll the list.</li>
       <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears. On a touch screen, hold two fingers still in open air and move them together; the active settings appear above nearby strings.</li>
       <li><b>Playing fingers:</b> Settings chooses how many fingertips pluck - 1 (index only) up to 4 (index through pinky).</li>
     </ul>
@@ -465,7 +476,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Beat:</b> pick a style, then switch its parts on one at a time: kick, snare, hats, bass, chords. Bass and chords follow the key and tone at the top.</li>
       <li><b>Follow chords:</b> while the beat plays, every string retunes to the chord of the current bar, so whatever you play fits.</li>
       <li><b>Your layers:</b> press <b>Record a layer</b>, wait for the count, play a phrase. It loops, and you play the next layer on top. Tap a layer to mute it, × to remove it, <b>Undo</b> to remove the last one.</li>
-      <li><b>Mixer:</b> the bottom bar has two panels: <b>Beat &amp; record</b> and <b>Mixer</b>. The mixer has volume sliders for your playing, the beat and each layer, plus <b>Export stems</b> for separate audio files.</li>
+      <li><b>Mixer:</b> the bottom bar has two panels: <b>Beat &amp; record</b> and <b>Mixer</b>. The mixer has a fader for every added instrument, plus your playing, the beat and each layer. Pinch a fader and slide it with your hand; pinch the empty space and drag to scroll. <b>Export stems</b> lives in the Beat &amp; record panel and saves separate audio files.</li>
     </ul>
     </details>
     <details class="help-group"><summary>Recording and filming</summary>
@@ -500,10 +511,9 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <label for="sDim">Darken the camera picture</label><input id="sDim" type="range" min="0" max="0.7" step="0.02">
       <label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="1" step="0.02">
       <label for="sDebug">Show tracking data<small>Frame rate and pinch readings, for troubleshooting.</small></label><input id="sDebug" type="checkbox">
-      <label for="sCamRes">Camera resolution<small>Low (640×480) reduces latency on phones. High (1280×720) for desktop.</small></label><select id="sCamRes"><option value="low">Low (640×480)</option><option value="high">High (1280×720)</option></select>
+      <label for="sCamRes">Camera resolution<small>Low (640×480) reduces latency on phones. High (1280×720) for desktop. Changing this restarts the camera.</small></label><select id="sCamRes"><option value="low">Low (640×480)</option><option value="high">High (1280×720)</option></select>
       <label for="sMaxHands">Max hands tracked<small>1 is cheaper; 2 for two-hand play.</small></label><select id="sMaxHands"><option value="1">1</option><option value="2">2</option></select>
       <label for="sBackend">Tracker backend<small>Auto tries GPU then CPU.</small></label><select id="sBackend"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
-      <label for="sRepeat">Repeat note while held<small>Rolls/retriggers the note while a finger stays on a string.</small></label><input id="sRepeat" type="checkbox">
     </div>
     <p class="small">To force a layout for one visit, add <code>#mobile</code> or <code>#desktop</code> to the page address.</p>
     <div class="actions"><button id="layoutSwitch">Switch layout</button><button class="primary" data-close="setModal">Done</button></div>
@@ -867,6 +877,8 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+// landmark distance including depth (weighted: z is noisier than x/y) — readHands scales z into stage pixels
+const lmDist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y, 0.6 * ((p.z || 0) - (q.z || 0)));
 const nowS = () => performance.now() / 1000;
 
 const NOTE_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
@@ -980,7 +992,6 @@ const state = {
     camRes: 'high',
     maxHands: 2,
     trackerBackend: 'auto',
-    repeat: true,
   },
 };
 
@@ -1677,6 +1688,15 @@ function layerOut(L) {
   L._g.gain.value = L.vol;
   return L._g;
 }
+// each added instrument (string) plays through its own fader, under the live master
+function stringOut(s) {
+  if (!s._g || s._g.context !== audio.ctx) {
+    s._g = audio.ctx.createGain();
+    s._g.connect(audio.music);
+  }
+  s._g.gain.value = s.vol == null ? 1 : s.vol;
+  return s._g;
+}
 function finishLayer() {
   const R = transport.rec;
   transport.rec = null;
@@ -1776,6 +1796,7 @@ function addString(p, q, opts = {}) {
     id: state.nextStringId++, a: { x: p.x, y: p.y }, b: { x: q.x, y: q.y },
     inst: opts.inst || 'guitar', scale: opts.scale || null, root: opts.root == null ? null : opts.root,
     oct: opts.oct || 0, mode: opts.mode || 'notes', tune: opts.tune === 'fretless' ? 'fretless' : 'tet',
+    vol: opts.vol == null ? 1 : clamp(opts.vol, 0, 1.5),
     vib: { amp: 0, t0: 0, pos: 0.5 }, flash: { z: -1, t: 0 }, last: {}, track: {}, dwell: {}, holds: {}, voices: [], pull: null, bend: 0, born: nowS(), touched: nowS(),
   };
   orient(s);
@@ -1788,6 +1809,11 @@ function addString(p, q, opts = {}) {
 }
 function removeString(s) {
   for (const pid in s.holds) endHold(s, pid);
+  if (s._g && audio.ctx) {
+    const g = s._g; s._g = null;
+    g.gain.setTargetAtTime(0, audio.ctx.currentTime, 0.02);
+    setTimeout(() => g.disconnect(), 2000);
+  }
   state.strings = state.strings.filter(x => x !== s);
   if (state.menu && state.menu.s === s) state.menu = null;
   burst(strMid(s), INSTRUMENTS[s.inst].color, 26, 200);
@@ -1816,7 +1842,7 @@ function pluck(s, u, vel, down, quiet) {
   const n = zoneCount(s), z = clamp(Math.floor(u * n), 0, n - 1);
   const info = noteAt(s, u, z);
   const ev = info.drum ? { inst: s.inst, drum: info.drum, vel } : { inst: s.inst, notes: info.notes, vel, down: !!down };
-  const vs = playEvent(ev, audio.ctx.currentTime, audio.music);
+  const vs = playEvent(ev, audio.ctx.currentTime, stringOut(s));
   keepVoices(s, vs);
   captureEvent(ev);
   const t = nowS();
@@ -1847,9 +1873,8 @@ function bendString(s, cents) {
 }
 
 // ── holding a finger on a string ──
-// Sustaining instruments (violin, voices, organ…) sing for as long as you stay; drums and mallets roll;
+// Sustaining instruments (violin, voices, organ…) sing for as long as you stay;
 // everything else sounds when touched. Sliding along the string moves through its notes.
-const ROLLS = { marimba: 1, steelpan: 1, oud: 1, qanun: 1, drums: 1, handdrums: 1 };
 const HOLD_IN = 10, HOLD_OUT = 22, HOLD_AFTER = 0.14;
 function holdNote(s, h, t) {
   initAudio();
@@ -1862,7 +1887,7 @@ function holdNote(s, h, t) {
   if (SUSTAINS[s.inst]) {
     for (const v of h.voices) releaseVoice(v);
     const ev = { inst: s.inst, notes: info.notes, vel: 0.62 };
-    h.voices = playEvent(ev, audio.ctx.currentTime, audio.music, { held: true });
+    h.voices = playEvent(ev, audio.ctx.currentTime, stringOut(s), { held: true });
     for (const v of h.voices) if (s.bend) bendVoice(v, s.bend, 0.001);
     h.cap = captureEvent(Object.assign({ hold: 0.2 }, ev)); h.capT = t;
     s.flash = { z, u, t }; s.touched = t; state.counts.plucks++;
@@ -1870,12 +1895,10 @@ function holdNote(s, h, t) {
     notePop(s, p, info.label, t);
   } else {
     pluck(s, h.u, 0.6, false);
-    h.next = t + rollGap(s);
   }
 }
-const rollGap = s => (INSTRUMENTS[s.inst].kit && transport.playing ? stepDur() : 0.095);
 function startHold(s, pid, u, t) {
-  const h = s.holds[pid] = { u, t0: t, seen: t, voices: [], key: null, next: 0 };
+  const h = s.holds[pid] = { u, t0: t, seen: t, voices: [], key: null };
   state.counts.holds = (state.counts.holds || 0) + 1;
   holdNote(s, h, t);
 }
@@ -1885,7 +1908,7 @@ function endHold(s, pid) {
   for (const v of h.voices) releaseVoice(v);
   delete s.holds[pid];
 }
-// called every frame: keeps held notes alive, rolls the rolling ones, drops holds whose finger vanished
+// called every frame: keeps held notes alive and drops holds whose finger vanished
 function updateHolds(t) {
   for (const s of state.strings) for (const pid in s.holds) {
     const h = s.holds[pid];
@@ -1894,9 +1917,6 @@ function updateHolds(t) {
       if (h.cap) h.cap.hold = Math.max(0.15, t - h.capT);
       holdNote(s, h, t);                              // retune if the chord under it changed
       s.vib = { amp: 5, t0: t - 0.02, pos: clamp(h.u, 0.08, 0.92) };
-    } else if (state.settings.repeat !== false && ROLLS[s.inst] && t >= h.next) {
-      pluck(s, h.u, 0.42 + 0.12 * Math.random(), false, true);
-      h.next = Math.max(h.next + rollGap(s), t + 0.03);
     }
   }
 }
@@ -2119,7 +2139,7 @@ function chooseMenu(it) {
 }
 function pluckQuiet(s) { // a short preview so a choice can be heard
   const info = noteAt(s, 0, 0);
-  playEvent({ inst: s.inst, notes: info.notes, vel: 0.55 }, audio.ctx.currentTime, audio.music);
+  playEvent({ inst: s.inst, notes: info.notes, vel: 0.55 }, audio.ctx.currentTime, stringOut(s));
   s.vib = { amp: 9, t0: nowS(), pos: 0.3 };
 }
 
@@ -2139,8 +2159,9 @@ function updateMenu(pointers, dt) {
     if (over && !it.hover && M.kind === 'instrument' && audio.ctx && t - M.opened > 0.3 && t - (M.heard || 0) > 0.14) {
       M.heard = t;
       const base = scaleDegree(SCALES[strScale(M.s)].parent, strRoot(M.s), INSTRUMENTS[it.id].oct, 0);
-      if (INSTRUMENTS[it.id].kit) playDrum(INSTRUMENTS[it.id].kit[1].id, audio.ctx.currentTime, 0.35, audio.music);
-      else playNote(it.id, base, audio.ctx.currentTime, 0.35, audio.music);
+      const dest = stringOut(M.s);
+      if (INSTRUMENTS[it.id].kit) playDrum(INSTRUMENTS[it.id].kit[1].id, audio.ctx.currentTime, 0.35, dest);
+      else playNote(it.id, base, audio.ctx.currentTime, 0.35, dest);
     }
     // a finger that was already resting here when the ring opened must leave before it can hold-select
     if (!M.primed) it.blocked = over; else if (!over) it.blocked = false;
@@ -2170,6 +2191,17 @@ const TRACKER = Object.assign({}, LOCAL_TRACKER, window.__SM_PATHS || {});
 const cam = { video: null, tracker: null, lastVT: -1, delegate: '', frames: 0, fpsT: 0, trackFps: 0 };
 const modalOpen = () => !!document.querySelector('.modal.open');
 
+function camConstraints() {
+  if (state.settings.camRes === 'low') return { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' };
+  const vertical = state.shape === 'vertical';
+  return { width: { ideal: vertical ? 1920 : 1280 }, height: { ideal: vertical ? 1080 : 720 }, facingMode: 'user' };
+}
+function stopCamStream() {
+  const v = cam.video;
+  if (v && v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
+  cam.lastVT = -1;
+}
+
 async function loadTracker() {
   let vision, paths = TRACKER;
   try {
@@ -2195,20 +2227,20 @@ async function loadTracker() {
   catch (e) { cam.tracker = await make('CPU'); cam.delegate = 'CPU'; }
 }
 
-async function startCamera(setStatus) {
+async function startCamera(setStatus, opts = {}) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('This browser cannot open a camera from here.');
   setStatus('Waiting for camera permission…');
-  const S = state.settings;
-  const low = S.camRes === 'low';
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: low ? 640 : 1280 }, height: { ideal: low ? 480 : 720 }, facingMode: 'user' }, audio: false,
-  });
+  stopCamStream();                       // release the old camera before asking for the new one
+  const stream = await navigator.mediaDevices.getUserMedia({ video: camConstraints(), audio: false });
   const v = cam.video = $('#cam');
   v.srcObject = stream;
   await v.play();
-  setStatus('Loading the hand tracker…');
-  await loadTracker();
-  state.mode = 'camera';
+  cam.lastVT = -1;                       // make the tracker read the first frame of the new stream
+  if (!opts.reuseTracker || !cam.tracker) {
+    setStatus('Loading the hand tracker…');
+    await loadTracker();
+    state.mode = 'camera';
+  }
 }
 
 // camera frame → mirrored canvas coordinates, matching how the picture is drawn ("cover" fit)
@@ -2229,12 +2261,14 @@ function readHands(t) {
   const f = videoFit();
   cam.frames++;
   if (t - cam.fpsT > 1) { cam.trackFps = Math.round(cam.frames / (t - cam.fpsT)); cam.frames = 0; cam.fpsT = t; }
-  return (res.landmarks || []).map(lm => lm.map(p => ({ x: W - (p.x * f.vw * f.sc + f.ox), y: p.y * f.vh * f.sc + f.oy })));
+  // keep depth in stage pixels too, so a pinch can't fire on fingers that only overlap on screen
+  return (res.landmarks || []).map(lm => lm.map(p => ({ x: W - (p.x * f.vw * f.sc + f.ox), y: p.y * f.vh * f.sc + f.oy, z: (p.z || 0) * f.vw * f.sc })));
 }
 
 function newHand() {
   return { lm: null, raw0: null, present: true, seen: 0, pinch: false, pc: 0, ratio: 1, cursor: { x: 0, y: 0 },
-    prev: {}, intent: null, pinchT: 0, pinchStart: null, drag: null, dot: null, lastRelease: -9, press: false, hoverEl: null };
+    prev: {}, intent: null, pinchT: 0, pinchStart: null, drag: null, dot: null,
+    scrollEl: null, scrollTop: 0, scrollY: 0, lastRelease: -9, press: false, hoverEl: null };
 }
 
 // dets: up to two hands, each 21 points in canvas space
@@ -2283,9 +2317,17 @@ function processHands(dets, t) {
     if (!h || !h.present || !h.pinch) return;
     if (h.intent === 'drag') { h.drag.s[h.drag.end] = { ...h.cursor }; h.drag.s.touched = t; }
     if (h.intent === 'grab') pullString(h.grab, h.cursor);
+    if (h.intent === 'slider') {
+      if (h.slider && h.slider.isConnected) setRangeFromStage(h.slider, h.cursor);
+      else h.intent = 'free';
+    }
+    if (h.intent === 'scroll') {
+      if (h.scrollEl && h.scrollEl.isConnected) h.scrollEl.scrollTop = h.scrollTop - (toClient(h.cursor).y - h.scrollY);
+      else h.intent = 'free';
+    }
     // one hand pinching and dragging through open air: the air pad
     const o = slots[1 - j];
-    if (h.intent === 'free' && !(o && o.present && o.pinch) && dist(h.cursor, h.pinchStart) > 45 && !buttonAt(h.pinchStart) && !modalOpen()) h.intent = 'fx';
+    if (h.intent === 'free' && !(o && o.present && o.pinch) && dist(h.cursor, h.pinchStart) > 45 && !controlAt(h.pinchStart) && !modalOpen()) h.intent = 'fx';
     if (h.intent === 'fx') moveFx(h.pinchStart, h.cursor);
   });
 }
@@ -2305,20 +2347,30 @@ function endFx() {
 
 function updateHand(j, d, t) {
   const h = state.hands[j];
-  const dt = h.seen ? t - h.seen : 0.033;
+  const prevSeen = h.seen;
   h.raw0 = d[0];
   if (!h.lm) h.lm = d.map(p => ({ ...p }));
   else for (let k = 0; k < 21; k++) {
     const a = clamp(dist(d[k], h.lm[k]) / 14, 0.4, 1);
     h.lm[k].x += a * (d[k].x - h.lm[k].x);
     h.lm[k].y += a * (d[k].y - h.lm[k].y);
+    if (d[k].z != null) h.lm[k].z = (h.lm[k].z || 0) + a * (d[k].z - (h.lm[k].z || 0));
   }
   h.seen = t; h.present = true;
   const lm = h.lm;
-  const size = Math.max(dist(lm[0], lm[9]), dist(lm[5], lm[17]) * 1.25, 1);
-  h.ratio = dist(lm[4], lm[8]) / size;
-  h.cursor = { x: (lm[4].x + lm[8].x) / 2, y: (lm[4].y + lm[8].y) / 2 };
+  const size = Math.max(lmDist(lm[0], lm[9]), lmDist(lm[5], lm[17]) * 1.25, 1);
+  // the thumb-tip landmark jitters when the thumb is tucked; use the steadier IP joint then
+  const thumb = lmDist(lm[4], lm[2]) > lmDist(lm[3], lm[2]) * 1.05 ? lm[4] : lm[3];
+  h.thumbOk = thumb === lm[4];
+  const raw = lmDist(thumb, lm[8]) / size;
+  h.ratioRaw = raw;
+  h.ratio = prevSeen ? h.ratio * 0.65 + raw * 0.35 : raw;
   const sens = state.settings.pinchSens, down = 0.3 * sens, up = 0.46 * sens;
+  h.close = clamp(1 - (h.ratio - down) / (0.7 * sens), 0, 1);
+  // sit near the thumb while open, then settle on the thumb/index midpoint as the pinch closes
+  const atThumb = { x: lerp(lm[8].x, thumb.x, 0.8), y: lerp(lm[8].y, thumb.y, 0.8) };
+  const mid = { x: (thumb.x + lm[8].x) / 2, y: (thumb.y + lm[8].y) / 2 };
+  h.cursor = { x: lerp(atThumb.x, mid.x, h.close), y: lerp(atThumb.y, mid.y, h.close) };
   if (!h.pinch) {
     if (h.ratio < down) { if (++h.pc >= 2) { h.pinch = true; h.pc = 0; pinchDown(h, t); } } else h.pc = 0;
   } else {
@@ -2336,6 +2388,14 @@ function pinchDown(h, t) {
   forgetPointer('h' + state.hands.indexOf(h) + '-');
   if (state.menu) { h.intent = 'menu'; return; }
   if (modalOpen()) { h.intent = 'tap'; return; }
+  const fader = rangeAt(h.cursor);
+  if (fader) { h.intent = 'slider'; h.slider = fader; setRangeFromStage(fader, h.cursor); return; }
+  if (buttonAt(h.cursor)) { h.intent = 'free'; return; }     // buttons win over strings drawn behind the bars
+  const box = scrollAt(h.cursor);
+  if (box) {
+    h.intent = 'scroll'; h.scrollEl = box; h.scrollTop = box.scrollTop; h.scrollY = toClient(h.cursor).y;
+    return;
+  }
   const ep = nearestEndpoint(h.cursor, Math.max(36, 16 * state.ui));
   if (ep) { h.intent = 'drag'; h.drag = ep; return; }
   const dot = nearestDot(h.cursor, Math.max(34, 16 * state.ui));
@@ -2363,6 +2423,10 @@ function pinchUp(j, t) {
     releasePull(h.grab);
   } else if (h.intent === 'fx') {
     endFx();
+  } else if (h.intent === 'slider') {
+    h.slider = null;                    // the value already followed the pinch
+  } else if (h.intent === 'scroll') {
+    h.scrollEl = null;                  // the list already followed the pinch
   } else if (h.intent === 'free' || h.intent === 'tap') {
     if (still && t - h.pinchT < 1) handClick(h.pinchStart);
   }
@@ -2379,6 +2443,8 @@ function dropHand(j) {
   if (h.intent === 'drag') orient(h.drag.s);
   if (h.intent === 'grab') { h.grab.s.pull = null; bendString(h.grab.s, 0); }
   if (h.intent === 'fx') endFx();
+  h.slider = null; h.scrollEl = null;
+  if (h._ring) h._ring.classList.remove('on');
   setHover(h, null);
   h.present = false; h.pinch = false; h.intent = null; h.plucking = false;
   forgetPointer('h' + j + '-');
@@ -2395,6 +2461,31 @@ function buttonAt(p) {
   const b = el && el.closest && el.closest('button');
   return b && !b.disabled ? b : null;
 }
+function rangeAt(p) {
+  const c = toClient(p);
+  const el = document.elementFromPoint(c.x, c.y);
+  const r = el && el.closest && el.closest('input[type=range]');
+  return r && !r.disabled ? r : null;
+}
+// a pinch can press a button or grab a fader; both get the same amber hover ring
+function controlAt(p) { return buttonAt(p) || rangeAt(p); }
+// the open control bars scroll their contents; a pinch on their empty space can scroll them too
+function scrollAt(p) {
+  const c = toClient(p);
+  const el = document.elementFromPoint(c.x, c.y);
+  const box = el && el.closest && el.closest('#dock .panel-inner, #top .panel-inner');
+  return box && box.scrollHeight > box.clientHeight + 2 ? box : null;
+}
+function setRangeFromStage(el, stageP) {
+  const c = toClient(stageP), r = el.getBoundingClientRect();
+  const v = clamp((c.x - r.left) / Math.max(1, r.width), 0, 1);
+  const min = +el.min || 0, max = +el.max || 1, step = +el.step;
+  let val = min + v * (max - min);
+  if (step > 0) val = Math.round(val / step) * step;
+  if (el.value === String(val)) return;
+  el.value = String(val);
+  el.dispatchEvent(new Event('input', { bubbles: true }));   // same path as mouse/touch: audio + readout
+}
 function setHover(h, el) {
   if (h.hoverEl === el) return;
   if (h.hoverEl) h.hoverEl.classList.remove('hand-hover');
@@ -2409,7 +2500,7 @@ function handClick(p) {
   b.click();
 }
 function updateHandHover() {
-  for (const h of state.hands) if (h) setHover(h, h.present ? buttonAt(h.cursor) : null);
+  for (const h of state.hands) if (h) setHover(h, h.present ? controlAt(h.cursor) : null);
 }
 
 // ── touch play: one finger plays; holding two or three fingers arms create/edit ──
@@ -3055,12 +3146,25 @@ function drawHands(t) {
     g.strokeStyle = IVORY; g.lineWidth = 2;
     for (const k of tips) { g.beginPath(); g.arc(lm[k].x, lm[k].y, 8 * ur, 0, 7); g.stroke(); }
     // pinch pointer: closes and fills as thumb and finger meet
-    const sens = state.settings.pinchSens;
-    const k = clamp(1 - (h.ratio - 0.3 * sens) / (0.7 * sens), 0, 1);
+    const k = h.close || 0;
     const r = lerp(17, 7, k) * ur;
     g.strokeStyle = h.pinch ? '#ffc24a' : 'rgba(255,194,74,0.75)'; g.lineWidth = h.pinch ? 3 : 1.6;
     g.beginPath(); g.arc(h.cursor.x, h.cursor.y, r, 0, 7); g.stroke();
     if (h.pinch) { g.fillStyle = '#ffc24a'; g.beginPath(); g.arc(h.cursor.x, h.cursor.y, 5, 0, 7); g.fill(); }
+    // the canvas sits under the control bars, so repeat the ring above them when the hand is there
+    const c = toClient(h.cursor);
+    const el = document.elementFromPoint(c.x, c.y);
+    const overPanel = (state.mode === 'camera' || state.mode === 'demo') && el && el.closest && el.closest('#top, #dock');
+    let ring = h._ring;
+    if (!ring) { ring = h._ring = document.createElement('div'); ring.className = 'hand-ring'; $('#handOverlay').appendChild(ring); }
+    if (!overPanel) ring.classList.remove('on');
+    else {
+      const scale = $('#stage').getBoundingClientRect().width / W;
+      ring.style.left = c.x + 'px'; ring.style.top = c.y + 'px';
+      ring.style.width = ring.style.height = Math.round(2 * r * scale) + 'px';
+      ring.classList.toggle('pinched', !!h.pinch);
+      ring.classList.add('on');
+    }
   }
   // ripples where a pinch pressed a button
   state.ripples = state.ripples.filter(r => t - r.t < 0.45);
@@ -3087,7 +3191,7 @@ function drawDebug() {
   if (!state.settings.debug) return;
   const lines = [`draw ${state.fps} fps · tracker ${cam.trackFps} fps ${cam.delegate}`];
   state.hands.forEach((h, i) => {
-    if (h && h.present) lines.push(`hand ${i + 1}: fingers ${h.ratio.toFixed(2)} · closes below ${(0.3 * state.settings.pinchSens).toFixed(2)} · ${h.pinch ? 'PINCHED' : 'open'} ${h.intent || ''}`);
+    if (h && h.present) lines.push(`hand ${i + 1}: fingers ${h.ratio.toFixed(2)} (raw ${(h.ratioRaw || h.ratio).toFixed(2)}) · thumb ${h.thumbOk === false ? 'IP' : 'tip'} · closes below ${(0.3 * state.settings.pinchSens).toFixed(2)} · ${h.pinch ? 'PINCHED' : 'open'} ${h.intent || ''}`);
   });
   lines.forEach((s, i) => label(s, 16, state.safeTop + 18 + i * 18, 12, '#8ff0c0', 'left', 500));
 }
@@ -3349,7 +3453,7 @@ function setShape(shape, auto = false) {
   // a vertical picture uses only the middle of the camera frame, so ask the camera for more detail
   try {
     const tr = cam.video && cam.video.srcObject && cam.video.srcObject.getVideoTracks()[0];
-    if (tr) tr.applyConstraints(shape === 'vertical' ? { width: { ideal: 1920 }, height: { ideal: 1080 } } : { width: { ideal: 1280 }, height: { ideal: 720 } }).catch(() => {});
+    if (tr) tr.applyConstraints(camConstraints()).catch(() => {});
   } catch (_) {}
   layoutStage(); refreshUI();
 }
@@ -3380,7 +3484,7 @@ function snapshot(name) {
   const r = v => Math.round(v * 10) / 10;
   return { v: 1, name, saved: Date.now(), w: W, h: H, shape: state.shape, key: state.key, scale: state.scale,
     beat: transport.beat, bpm: transport.bpm, parts: Object.assign({}, transport.parts), loopBars: transport.loopBars, follow: transport.follow,
-    strings: state.strings.map(s => ({ a: [r(s.a.x), r(s.a.y)], b: [r(s.b.x), r(s.b.y)], inst: s.inst, scale: s.scale, root: s.root, oct: s.oct, mode: s.mode, tune: s.tune })),
+    strings: state.strings.map(s => ({ a: [r(s.a.x), r(s.a.y)], b: [r(s.b.x), r(s.b.y)], inst: s.inst, scale: s.scale, root: s.root, oct: s.oct, mode: s.mode, tune: s.tune, vol: Math.round((s.vol == null ? 1 : s.vol) * 100) / 100 })),
     layers: transport.layers.map(L => ({ len: L.len, offset: L.offset, vol: L.vol, muted: L.muted, events: L.events })) };
 }
 
@@ -3389,8 +3493,7 @@ function applySetup(d) {
   if (!d || !Array.isArray(d.strings)) { toast('That file is not a String Mirror setup.'); return false; }
   const num = (v, a, b, def) => (Number.isFinite(+v) ? clamp(+v, a, b) : def);
   closeMenu(); state.preview = null; state.cleared = null;
-  state.strings.slice().forEach(s => { for (const pid in s.holds) endHold(s, pid); });
-  state.strings = [];
+  state.strings.slice().forEach(removeString);   // also releases each string's gain node
   transport.layers.slice().forEach(L => removeLayer(L.id));
   transport.rec = null;
   if ((d.shape === 'vertical' || d.shape === 'landscape') && d.shape !== state.shape) setShape(d.shape);
@@ -3411,7 +3514,7 @@ function applySetup(d) {
     if (dist(a, b) < 40) continue;
     addString(a, b, { silent: true, inst: own(INSTRUMENTS, o.inst) ? o.inst : 'guitar', scale: own(SCALES, o.scale) ? o.scale : null,
       root: o.root == null ? null : Math.round(num(o.root, 0, 11, 0)), oct: Math.round(num(o.oct, -2, 2, 0)), mode: o.mode === 'chord' ? 'chord' : 'notes',
-      tune: o.tune === 'fretless' ? 'fretless' : 'tet' });
+      tune: o.tune === 'fretless' ? 'fretless' : 'tet', vol: num(o.vol, 0, 1.5, 1) });
   }
   for (const L of (Array.isArray(d.layers) ? d.layers : []).slice(0, MAX_LAYERS)) {
     const len = [16, 32, 64, 128].includes(L && L.len) ? L.len : 0;
@@ -3700,10 +3803,16 @@ function syncRangeLabels() {
 
 function mixSlidersHTML() {
   const pct = v => Math.round(v * 100) + '%';
-  const row = (label, sub, key, v, extra = '') => `<div class="mrow"><span class="grow"><b>${label}</b><small>${sub}</small></span>${extra}`
-    + `<input type="range" min="0" max="1.5" step="0.01" value="${v}" data-vol="${key}" aria-label="${label} volume" aria-valuetext="${pct(v)}"><span class="val">${pct(v)}</span></div>`;
+  const row = (label, sub, key, v, extra = '') => `<div class="mrow"><span class="grow"><b>${label}</b><small>${sub}</small></span>`
+    + `<div class="mix-ctl">${extra}<input type="range" min="0" max="1.5" step="0.01" value="${v}" data-vol="${key}" aria-label="${label} volume" aria-valuetext="${pct(v)}"><span class="val">${pct(v)}</span></div></div>`;
+  const insts = state.strings.length
+    ? '<div class="mix-head">Added instruments</div>' + state.strings.map((s, i) =>
+        row(INSTRUMENTS[s.inst].name, `String ${i + 1} · ${SCALES[strScale(s)].short}`, 'S' + s.id, s.vol == null ? 1 : s.vol)).join('')
+    : '';
   return row('Your playing', 'What you play live on the strings', 'live', state.mix.live)
     + row('Beat', BEATS[transport.beat].name, 'beat', state.mix.beat)
+    + insts
+    + (transport.layers.length ? '<div class="mix-head">Recorded layers</div>' : '')
     + transport.layers.map((L, i) => row(`Layer ${i + 1}`, `${L.name} · ${L.len / 16} bar${L.len > 16 ? 's' : ''}`, 'L' + L.id, L.vol,
       `<button data-layer="${L.id}">${L.muted ? 'Unmute' : 'Mute'}</button><button data-del="${L.id}">Remove</button>`)).join('');
 }
@@ -3716,6 +3825,9 @@ function setVolume(key, v, refresh = true) {
   if (key === 'live' || key === 'beat') {
     state.mix[key] = val;
     if (audio.ctx) { audio.music.gain.value = state.mix.live; audio.beat.gain.value = state.mix.beat; }
+  } else if (key[0] === 'S') {
+    const s = state.strings.find(x => 'S' + x.id === key);
+    if (s) { s.vol = val; if (s._g) s._g.gain.value = val; }
   } else {
     const L = transport.layers.find(l => 'L' + l.id === key);
     if (L) { L.vol = val; if (L._g) L._g.gain.value = val; }
@@ -3723,7 +3835,9 @@ function setVolume(key, v, refresh = true) {
   if (refresh) refreshUI();
 }
 function nudgeVolume(key, d) {
-  const cur = key === 'live' || key === 'beat' ? state.mix[key] : (transport.layers.find(l => 'L' + l.id === key) || { vol: 0 }).vol;
+  const cur = key === 'live' || key === 'beat' ? state.mix[key]
+    : key[0] === 'S' ? (state.strings.find(x => 'S' + x.id === key) || { vol: 1 }).vol
+    : (transport.layers.find(l => 'L' + l.id === key) || { vol: 0 }).vol;
   setVolume(key, cur + d * 0.1);
 }
 
@@ -3881,7 +3995,6 @@ function layoutStage() {
   state.ui = r.width ? W / r.width : 1;
   state.pointerCoarse = matchMedia('(pointer: coarse)').matches;
   document.documentElement.classList.toggle('coarse', state.pointerCoarse);
-  if (state.pointerCoarse) state.settings.camRes = 'low';
   const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
   const clean = document.body.classList.contains('clean');
   // the canvas can be larger than the viewport (cover fit); keep menus inside the visible part
@@ -3931,7 +4044,6 @@ function initUI() {
   on('keyUp', () => { state.key = (state.key + 1) % 12; });
   on('toneDown', () => { state.scale = step(SCALE_ORDER, state.scale, -1); });
   on('toneUp', () => { state.scale = step(SCALE_ORDER, state.scale, 1); });
-  on('repeatBtn', () => { state.settings.repeat = !state.settings.repeat; $('#repeatBtn').setAttribute('aria-pressed', state.settings.repeat); $('#sRepeat').checked = state.settings.repeat; });
   on('bpmDown', () => { transport.bpm = clamp(transport.bpm - 4, 56, 180); });
   on('bpmUp', () => { transport.bpm = clamp(transport.bpm + 4, 56, 180); });
   on('barsDown', () => { transport.loopBars = step([1, 2, 4, 8], transport.loopBars, -1); });
@@ -3950,8 +4062,8 @@ function initUI() {
     if (transport.follow && !transport.playing) toast('Follow chords takes effect while the beat is playing.');
   });
   on('undoLayer', undoLayer);
-  on('beatTab', () => setDockView('beat'));
-  on('mixerTab', () => { $('#stemsNote').textContent = ''; setDockView('mixer'); });
+  on('beatTab', () => { $('#stemsNote').textContent = ''; setDockView('beat'); });
+  on('mixerTab', () => setDockView('mixer'));
   on('setupsBtn', () => { refreshSetups(); openModal('setupsModal'); });
   on('setupSave', () => saveSetup($('#setupName').value));
   on('setupFileOut', setupToFile);
@@ -4039,11 +4151,26 @@ function initUI() {
   bind('sQuant', 'quantize'); bind('sDebug', 'debug');
   bind('sVol', 'volume', () => { if (audio.master) audio.master.gain.value = S.volume; });
   // camera/tracker optimization settings
-  const camResEl = $('#sCamRes'); camResEl.value = S.camRes; camResEl.addEventListener('change', () => { S.camRes = camResEl.value; });
+  const camResEl = $('#sCamRes');
+  camResEl.value = S.camRes;
+  camResEl.addEventListener('change', async () => {
+    const next = camResEl.value, prev = S.camRes;
+    if (next === prev) return;
+    S.camRes = next;
+    if (!cam.video || !cam.video.srcObject) return;      // no live camera yet; the next start uses this choice
+    camResEl.disabled = true;
+    try {
+      await startCamera(() => {}, { reuseTracker: true });
+      toast('Camera restarted at ' + (next === 'low' ? 'low' : 'high') + ' resolution.');
+    } catch (err) {
+      console.error(err);
+      S.camRes = prev; camResEl.value = prev;
+      try { await startCamera(() => {}, { reuseTracker: true }); } catch (_) {}
+      toast('The camera could not change resolution; kept the old setting.');
+    } finally { camResEl.disabled = false; }
+  });
   const maxHandsEl = $('#sMaxHands'); maxHandsEl.value = String(S.maxHands); maxHandsEl.addEventListener('change', () => { S.maxHands = +maxHandsEl.value; if (cam.tracker) { /* takes effect next load */ } });
   const backendEl = $('#sBackend'); backendEl.value = S.trackerBackend; backendEl.addEventListener('change', () => { S.trackerBackend = backendEl.value; });
-  const repeatEl = $('#sRepeat'); repeatEl.checked = S.repeat; repeatEl.addEventListener('change', () => { S.repeat = repeatEl.checked; });
-  bind('sRepeat', 'repeat');
 
   // start screen
   const status = msg => { $('#startStatus').textContent = msg; };
@@ -4177,7 +4304,8 @@ function demoHandPoints(h, d) {            // d: +1 thumb points right, -1 thumb
   const p = h.p;
   const tip8 = P(lerp(d * 30, d * 42, p), lerp(-175, -128, p));
   const tip4 = P(lerp(d * 78, d * 45, p), lerp(-70, -122, p));
-  const anchor = p > 0.5 ? mix(tip4, tip8, 0.5) : tip8;       // what the script positions
+  const nearThumb = mix(tip8, tip4, 0.8);                            // open pointer sits near the thumb
+  const anchor = mix(nearThumb, mix(tip4, tip8, 0.5), clamp(p, 0, 1)); // near thumb when open, midpoint pinched — matches updateHand()
   const w = P(h.x - anchor.x, h.y - anchor.y);
   const at = q => P(w.x + q.x, w.y + q.y);
   const m5 = P(d * 22, -85), m9 = P(0, -90), m13 = P(-d * 20, -84), m17 = P(-d * 38, -72);
@@ -4287,6 +4415,7 @@ async function runDemo() {
 // ───────────────────────── boot ─────────────────────────
 function boot() {
   g = $('#stage').getContext('2d');
+  if (matchMedia('(pointer: coarse)').matches) state.settings.camRes = 'low';  // mobile default, changeable in settings
   initUI();
   initPointer();
   lastT = fpsT = nowS();
