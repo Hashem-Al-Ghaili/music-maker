@@ -278,6 +278,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
   <div id="topBody" class="panel-body"><div class="panel-inner">
     <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
     <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
+    <div class="group"><span class="lab">Repeat</span><button id="repeatBtn" class="sq" aria-pressed="true" aria-label="Toggle repeat while held">⟳</button></div>
     <div class="spacer"></div>
     <button id="recMode" title="What the Record button captures: the picture with sound, or the sound alone">Video + sound</button>
     <button id="setupsBtn">Setups</button>
@@ -445,6 +446,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <label for="sCamRes">Camera resolution<small>Low (640×480) reduces latency on phones. High (1280×720) for desktop.</small></label><select id="sCamRes"><option value="low">Low (640×480)</option><option value="high">High (1280×720)</option></select>
       <label for="sMaxHands">Max hands tracked<small>1 is cheaper; 2 for two-hand play.</small></label><select id="sMaxHands"><option value="1">1</option><option value="2">2</option></select>
       <label for="sBackend">Tracker backend<small>Auto tries GPU then CPU.</small></label><select id="sBackend"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
+      <label for="sRepeat">Repeat note while held<small>Rolls/retriggers the note while a finger stays on a string.</small></label><input id="sRepeat" type="checkbox">
     </div>
     <div class="actions"><button id="layoutSwitch">Switch layout</button><button class="primary" data-close="setModal">Done</button></div>
   </div>
@@ -920,6 +922,7 @@ const state = {
     camRes: 'high',
     maxHands: 2,
     trackerBackend: 'auto',
+    repeat: true,
   },
 };
 
@@ -1833,7 +1836,7 @@ function updateHolds(t) {
       if (h.cap) h.cap.hold = Math.max(0.15, t - h.capT);
       holdNote(s, h, t);                              // retune if the chord under it changed
       s.vib = { amp: 5, t0: t - 0.02, pos: clamp(h.u, 0.08, 0.92) };
-    } else if (ROLLS[s.inst] && t >= h.next) {
+    } else if (state.settings.repeat !== false && ROLLS[s.inst] && t >= h.next) {
       pluck(s, h.u, 0.42 + 0.12 * Math.random(), false, true);
       h.next = Math.max(h.next + rollGap(s), t + 0.03);
     }
@@ -3769,6 +3772,7 @@ function initUI() {
   on('keyUp', () => { state.key = (state.key + 1) % 12; });
   on('toneDown', () => { state.scale = step(SCALE_ORDER, state.scale, -1); });
   on('toneUp', () => { state.scale = step(SCALE_ORDER, state.scale, 1); });
+  on('repeatBtn', () => { state.settings.repeat = !state.settings.repeat; $('#repeatBtn').setAttribute('aria-pressed', state.settings.repeat); $('#sRepeat').checked = state.settings.repeat; });
   on('bpmDown', () => { transport.bpm = clamp(transport.bpm - 4, 56, 180); });
   on('bpmUp', () => { transport.bpm = clamp(transport.bpm + 4, 56, 180); });
   on('barsDown', () => { transport.loopBars = step([1, 2, 4, 8], transport.loopBars, -1); });
@@ -3877,6 +3881,8 @@ function initUI() {
   const camResEl = $('#sCamRes'); camResEl.value = S.camRes; camResEl.addEventListener('change', () => { S.camRes = camResEl.value; });
   const maxHandsEl = $('#sMaxHands'); maxHandsEl.value = String(S.maxHands); maxHandsEl.addEventListener('change', () => { S.maxHands = +maxHandsEl.value; if (cam.tracker) { /* takes effect next load */ } });
   const backendEl = $('#sBackend'); backendEl.value = S.trackerBackend; backendEl.addEventListener('change', () => { S.trackerBackend = backendEl.value; });
+  const repeatEl = $('#sRepeat'); repeatEl.checked = S.repeat; repeatEl.addEventListener('change', () => { S.repeat = repeatEl.checked; });
+  bind('sRepeat', 'repeat');
 
   // start screen
   const status = msg => { $('#startStatus').textContent = msg; };
