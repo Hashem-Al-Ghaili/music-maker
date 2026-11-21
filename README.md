@@ -31,6 +31,7 @@ With Touch play on, one finger sweeps across strings to pluck them, and several 
 
 - **Make a string** – hold two or three fingers still for a moment, then spread them apart and let go. You can also start them apart and pinch them together to make a string between their starting points. A quick two-finger sweep only plays; it never starts a string.
 - **Change a string** – hold two close fingers still on a string's badge and tap to open its instrument menu. Move them together to drag an end, bend a string, or work the air pad.
+- Holding two fingers still in open air and moving them together works the air pad (dark / thin / echo). Active FX values are shown as translucent badges above nearby strings.
 
 Tapping the finger icon again turns Touch play off and restores one-finger dragging for building and editing. The start screen shows the control summary right under **Play with touch**.
 

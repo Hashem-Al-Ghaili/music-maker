@@ -380,7 +380,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li>The amber ring between your thumb and index finger is your pointer. It closes as you pinch.</li>
       <li><b>Menus:</b> point at a choice and hold still for a moment, or pinch it.</li>
       <li><b>Buttons:</b> put the amber ring on any button and do a quick pinch.</li>
-      <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears.</li>
+      <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears. On a touch screen, hold two fingers still in open air and move them together; the active settings appear above nearby strings.</li>
     </ul>
     <h3>Touch screens</h3>
     <ul>
@@ -2339,7 +2339,7 @@ function touchEditBegin() {
   const pts = [...state.touches.values()].slice(0, 3);
   if (pts.length < 2) return;
   const mid = touchEditMid(pts.slice(0, 2));
-  const E = { points: pts, starts: pts.map(p => ({ x: p.x, y: p.y })), mid0: mid, t0: nowS(),
+  const E = { points: pts, starts: pts.map(p => ({ x: p.x, y: p.y })), mid0: mid, sep0: dist(pts[0], pts[1]), t0: nowS(),
     hold: false, mode: null, kind: null, anchor: null, from: null, timer: 0, target: touchEditTarget(mid) };
   state.touchEdit = E;
   E.timer = setTimeout(touchEditHold, TOUCH_HOLD * 1000);
@@ -2376,7 +2376,15 @@ function touchEditMove() {
       E.hold = true; E.mode = 'edit'; E.kind = E.target.kind; E.anchor = E.target.anchor;
     } else return;
   }
-  if (E.mode === 'create') { touchEditPreview(); return; }
+  if (E.mode === 'create') {
+    const [a, b] = touchEditPair(E);
+    const sep = a && b ? dist(a, b) : 0;
+    if (Math.abs(sep - E.sep0) < 30 * state.ui && dist(mid, E.mid0) > 40 * state.ui) {
+      E.mode = 'edit'; E.kind = 'fx'; E.from = { ...E.mid0 }; state.preview = null;   // two fingers moved together: air pad
+    } else touchEditPreview();
+    if (E.kind === 'fx') { moveFx(E.from, mid); return; }
+    return;
+  }
   if (!E.kind && dist(mid, E.mid0) > 28 * state.ui) {
     if (E.target) { E.kind = E.target.kind; E.anchor = E.target.anchor; }
     else { E.kind = 'fx'; E.from = { ...E.mid0 }; }
@@ -2730,9 +2738,12 @@ function drawString(s, t) {
         label(m.label, x - nx * Math.max(15, 11 * U), y - ny * Math.max(15, 11 * U), m.strong ? 12 : 10.5,
           m.strong ? '#ffc24a' : 'rgba(251,246,233,0.9)', 'center', m.strong ? 700 : 500);
       }
-    } else for (let z = 0; z < n; z++) {
-      const u = (z + 0.5) / n;
-      label(zoneInfo(s, z).label, s.a.x + dx * u - nx * Math.max(15, 11 * U), s.a.y + dy * u - ny * Math.max(15, 11 * U), size, 'rgba(251,246,233,0.9)', 'center', 500);
+    } else {
+      const size = n > 11 ? 9.5 : 11;
+      for (let z = 0; z < n; z++) {
+        const u = (z + 0.5) / n;
+        label(zoneInfo(s, z).label, s.a.x + dx * u - nx * Math.max(15, 11 * U), s.a.y + dy * u - ny * Math.max(15, 11 * U), size, 'rgba(251,246,233,0.9)', 'center', 500);
+      }
     }
   }
 }
@@ -2753,6 +2764,37 @@ function drawFx() {
   label('THIN' + (F.thin > 0.02 ? ' ' + Math.round(F.thin * 100) + '%' : ''), o.x, clamp(o.y - R - 14, state.safeTop + 14, H), 12, on(F.thin), 'center', 700);
   label('DARK' + (F.dark > 0.02 ? ' ' + Math.round(F.dark * 100) + '%' : ''), o.x, clamp(o.y + R + 14, 0, state.safeBottom - 14), 12, on(F.dark), 'center', 700);
   label('ECHO' + (F.echo > 0.02 ? ' ' + Math.round(F.echo * 100) + '%' : ''), clamp(o.x + (p.x >= o.x ? R : -R), state.safeLeft + 46, state.safeRight - 46), o.y - 14, 12, on(F.echo), 'center', 700);
+}
+
+function drawFxBadges(t) {
+  const F = state.fx;
+  if (!F) return;
+  const bits = [];
+  if (F.thin > 0.02) bits.push('THIN ' + Math.round(F.thin * 100) + '%');
+  if (F.dark > 0.02) bits.push('DARK ' + Math.round(F.dark * 100) + '%');
+  if (F.echo > 0.02) bits.push('ECHO ' + Math.round(F.echo * 100) + '%');
+  if (!bits.length) return;
+  const near = state.strings.filter(s => s.near || (s.flash && t - s.flash.t < 0.35)).slice(0, 2);
+  if (!near.length) return;
+  const fs = Math.max(10, 11 * state.ui), h = fs + 10;
+  g.save();
+  g.globalAlpha = 0.6;                     // translucent so the camera picture stays readable
+  g.font = `600 ${fs}px ${FONT}`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const s of near) {
+    const p = strMid(s), text = INSTRUMENTS[s.inst].name + ' · ' + bits.join('  ');
+    const w = g.measureText(text).width + 16;
+    const cx = clamp(p.x, state.safeLeft + w / 2 + 8, state.safeRight - w / 2 - 8);
+    const cy = clamp(p.y - Math.max(70, 52 * state.ui), state.safeTop + h / 2 + 8, state.safeBottom - h / 2 - 8);
+    g.fillStyle = 'rgba(8,10,14,0.85)';
+    g.beginPath();
+    if (g.roundRect) g.roundRect(cx - w / 2, cy - h / 2, w, h, 8); else g.rect(cx - w / 2, cy - h / 2, w, h);
+    g.fill();
+    g.strokeStyle = 'rgba(255,194,74,0.6)'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = '#ffc24a';
+    g.fillText(text, cx, cy);
+  }
+  g.restore();
 }
 
 function drawPreview() {
@@ -2951,6 +2993,7 @@ function render(t, dt) {
   }
   drawPreview();
   drawFx();
+  drawFxBadges(t);
   drawParticles(dt);
   drawPops(t);
   drawMenu(t);
@@ -4025,7 +4068,7 @@ function boot() {
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
     demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount,
     setTouchPlay, touchInfo: () => ({ touches: state.touches.size, hold: !!(state.touchEdit && state.touchEdit.hold), mode: state.touchEdit && state.touchEdit.mode, edit: state.touchEdit && state.touchEdit.kind }),
-    noteAt, fretlessInfo, zoneInfo };
+    noteAt, fretlessInfo, zoneInfo, moveFx, endFx };
 }
 boot();
 
