@@ -1,2 +1,10 @@
 /.impeccable/
 .env
+node_modules/
+www/
+android/
+dist/
+.gradle/
+local.properties
+*.log
+.DS_Store

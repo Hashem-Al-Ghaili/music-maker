@@ -44,6 +44,20 @@ The landing screen picks a layout from the screen: phones and tablets get **Mobi
 
 Append `#mobile`, `#desktop` or `#demo` to the URL to open a layout directly. `#demo` forces the desktop layout and runs the scripted hands without a camera. The stage shape follows the layout and rotation (16:9 on desktop and in landscape, 9:16 in mobile portrait); there is no separate rotation button.
 
+## Android APK
+
+`index.html` can be wrapped as an installable APK with [Capacitor](https://capacitorjs.com/):
+
+```bash
+npm run apk:setup   # once: accept SDK licenses and install Android platform/build-tools
+npm run apk:build   # stages index.html into www/, syncs Capacitor, builds the debug APK
+adb install -r dist/string-mirror-debug.apk
+```
+
+Prerequisites: Node/npm, Java 21, Android SDK with command-line tools (`sdkmanager`), and `adb` for installing. `ANDROID_HOME` defaults to `/opt/android-sdk`. Generated folders (`node_modules/`, `www/`, `android/`, `dist/`) are ignored by git.
+
+The first run needs internet to download MediaPipe's model/wasm from its CDN, and the app requests the camera permission when you tap **Start camera**. The mouse/touch-only modes work without a network connection. For a Play Store release APK you must additionally sign the build with your own keystore.
+
 ## Notes
 
 - Use Chrome or Edge. The camera needs a secure (https) page, which GitHub Pages provides.

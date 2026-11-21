@@ -1,0 +1,11 @@
+{
+  "appId": "com.hashemalghaili.stringmirror",
+  "appName": "String Mirror",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
