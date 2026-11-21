@@ -279,7 +279,6 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
     <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
     <div class="spacer"></div>
-    <button id="shapeBtn" title="Stage shape: landscape 16:9 or vertical 9:16">16:9</button>
     <button id="recMode" title="What the Record button captures: the picture with sound, or the sound alone">Video + sound</button>
     <button id="setupsBtn">Setups</button>
     <button id="clearBtn">Clear</button>
@@ -418,7 +417,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <ul>
       <li><b>Record:</b> records the performance. The button beside it switches between <b>Video + sound</b> and <b>Sound only</b>. Press Record again to stop, then save the video, or the audio as MP3 or WAV.</li>
       <li><b>Film:</b> hides every control, counts 3-2-1 and starts recording. Stop with the small button in the corner or the Esc key.</li>
-      <li><b>16:9 / 9:16:</b> switches the stage between landscape and vertical. Vertical uses the middle of the camera picture, so stand centred.</li>
+      <li><b>Stage shape:</b> follows the layout and screen rotation - 16:9 on desktop and in landscape, 9:16 in mobile portrait.</li>
       <li><b>Phones:</b> the top and bottom bars fold to slim handles. Tap a chevron to open one at a time. In landscape they move to the left and right edges. Settings has a <b>Switch layout</b> button if the wrong one was picked.</li>
     </ul>
     <h3>If tracking struggles</h3>
@@ -3515,8 +3514,6 @@ function refreshUI() {
   if (!rec.on) $('#recTime').textContent = '';
   $('#clearBtn').disabled = !state.strings.length && !state.cleared;
   $('#clearBtn').textContent = state.cleared ? 'Undo clear' : 'Clear';
-  $('#shapeBtn').textContent = state.shape === 'vertical' ? '9:16' : '16:9';
-  $('#shapeBtn').disabled = rec.on;
   const touchBtn = $('#touchBtn');
   if (touchBtn) {
     touchBtn.classList.toggle('on', state.mode === 'touch');
@@ -3762,7 +3759,6 @@ function initUI() {
   on('layerBtn', armLayer);
   on('recBtn', () => { rec.on ? stopRecording() : startRecording(); });
   on('clearBtn', clearStrings);
-  on('shapeBtn', () => setShape(state.shape === 'vertical' ? 'landscape' : 'vertical'));
   on('filmBtn', startFilm);
   on('touchBtn', () => setTouchPlay(state.mode !== 'touch'));
   on('filmStop', stopFilm);

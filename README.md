@@ -45,7 +45,7 @@ The landing screen picks a layout from the screen: phones and tablets get **Mobi
 - **Mobile landscape** – the two bars become left and right rails that span the full screen height. Tap a rail's chevron to slide it out; its controls fill the remaining height and scroll there, while the stage keeps the middle.
 - The bottom bar has two choosable panels: **Beat & record** and **Mixer** (with volume sliders), so no separate mixer window opens.
 
-Append `#mobile`, `#desktop` or `#demo` to the URL to open a layout directly. `#demo` forces the desktop layout and runs the scripted hands without a camera.
+Append `#mobile`, `#desktop` or `#demo` to the URL to open a layout directly. `#demo` forces the desktop layout and runs the scripted hands without a camera. The stage shape follows the layout and rotation (16:9 on desktop and in landscape, 9:16 in mobile portrait); there is no separate rotation button.
 
 ## Notes
 
