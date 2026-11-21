@@ -3,6 +3,11 @@
 **This fork implements & optimizes the site for mobile screen usage**
 - Optimization for mobile/smartphone screen size and also landscape mode
 - Play with touch screen (like with mouse on desktop version), add string functions have been moved to 2-finger-tip / pinching. 
+- Optimization for mobile/smartphone screen size and also landscape mode.
+- Play with touch screen (like with mouse on desktop version).
+- Add/Edit string functions have been moved to 2-finger-tip + hold / pinching+hold) and its info in the play style selection. 
+- experimental fretless/TET based tuning.
+
 
 **Originial created by: Hashem Al-Ghaili**
 
@@ -15,7 +20,7 @@ A single-page, camera-tracked instrument that runs entirely in the browser.
 ## How it works
 
 - **Stretch** – pinch thumb to index finger on both hands, pull apart, let go. A string stays where you left it.
-- **Choose** – pick one of 24 instruments and a tone (major, minor, pentatonic, blues, dorian, hijaz).
+- **Choose** – pick one of 24 instruments and a tone (major, minor, pentatonic, blues, dorian, hijaz). Each string can also switch between smooth fretless pitch and stepped 12-TET; fretless strings show root, octave and A4 = 440 Hz reference markers.
 - **Play** – sweep a fingertip across a string. Add a beat, loop your own layers, and record the result as video, MP3 or WAV.
 
 No camera? Choose "Play with the mouse instead" on the start screen. On a touch screen, choose **Play with touch** (or the finger icon in the top bar) to turn on **Touch play**.
@@ -24,7 +29,7 @@ No camera? Choose "Play with the mouse instead" on the start screen. On a touch 
 
 With Touch play on, one finger sweeps across strings to pluck them, and several fingers can play several strings at the same time. Making and editing strings moves to two fingers:
 
-- **Make a string** – hold two fingers close together and spread them apart, then let go. You can also start them apart and pinch them together to make a string between their starting points.
+- **Make a string** – hold two or three fingers still for a moment, then spread them apart and let go. You can also start them apart and pinch them together to make a string between their starting points. A quick two-finger sweep only plays; it never starts a string.
 - **Change a string** – hold two close fingers still on a string's badge and tap to open its instrument menu. Move them together to drag an end, bend a string, or work the air pad.
 
 Tapping the finger icon again turns Touch play off and restores one-finger dragging for building and editing.

@@ -361,6 +361,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Bend and snap:</b> pinch a string between its end and its badge and pull it sideways. Notes ringing on it bend up to two semitones. Let go and it snaps back with a pluck.</li>
       <li><b>Change it:</b> the badge in the middle of a string shows its instrument. Pinch it to choose another instrument, tone, key, higher or lower, chords instead of single notes, or to remove the string.</li>
       <li><b>Resize or move an end:</b> pinch an end and drag it. Shrink a string to nothing to delete it.</li>
+      <li><b>Fretless / 12-TET:</b> the string menu switches between smooth fretless pitch (gliding across two octaves) and stepped 12-tone equal temperament. Fretless strings mark their root, octaves and the A4 = 440 Hz reference.</li>
     </ul>
     <h3>Pointing and pressing</h3>
     <ul>
@@ -372,7 +373,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <h3>Touch screens</h3>
     <ul>
       <li><b>Touch play</b> (the finger icon in the top bar) makes one finger pluck strings, and several fingers play several strings at once. Tap it again to go back to dragging with one finger.</li>
-      <li><b>Make a string:</b> hold two fingers close together and spread them apart, then let go. You can also start them apart and pinch them together to make a string between their starting points.</li>
+      <li><b>Make a string:</b> hold two or three fingers still for a moment, then spread them apart and let go. You can also start them apart and pinch them together to make a string between their starting points.</li>
       <li><b>Edit:</b> hold two close fingers still on a string’s badge and tap to change its instrument. Move them together to drag an end, bend a string, or work the air pad.</li>
     </ul>
     <h3>Building a track</h3>
@@ -808,6 +809,7 @@ const SCALES = {
   hijaz:    { name: 'Hijaz',            short: 'hijaz',     steps: [0, 1, 4, 5, 7, 8, 10], parent: 'hijaz' },
 };
 const SCALE_ORDER = ['major', 'minor', 'pentamaj', 'pentamin', 'blues', 'dorian', 'hijaz'];
+const FRETLESS_SPAN = 24;              // semitones covered by a fretless string, low end to high end
 
 const DRUM_ZONES = [
   { id: 'kick', label: 'Kick' }, { id: 'snare', label: 'Snare' }, { id: 'hat', label: 'Hat' },
@@ -1625,8 +1627,22 @@ function chordLabel(deg) {
 // ───────────────────────── strings: creation, notes, plucking, the dot menu ─────────────────────────
 const strRoot = s => (s.root == null ? state.key : s.root);
 const strScale = s => s.scale || state.scale;
+const strTune = s => s.tune === 'fretless' ? 'fretless' : 'tet';
 const strLen = s => dist(s.a, s.b);
 const strMid = s => ({ x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 });
+const fretlessBase = s => 12 * (INSTRUMENTS[s.inst].oct + s.oct + 1) + strRoot(s);
+const fretlessMidi = (s, u) => fretlessBase(s) + FRETLESS_SPAN * clamp(u, 0, 1);
+const isFretless = s => strTune(s) === 'fretless' && !INSTRUMENTS[s.inst].kit && s.mode !== 'chord';
+function fretlessInfo(s, u) {
+  const m = fretlessMidi(s, u), hz = midiHz(m), r = Math.round(m);
+  const name = `${NOTE_NAMES[((r % 12) + 12) % 12]}${Math.floor(r / 12) - 1}`;
+  return { notes: [m], label: `${name} · ${hz.toFixed(0)} Hz`, hz };
+}
+function noteAt(s, u, z) {
+  if (isFretless(s)) return fretlessInfo(s, u);
+  const n = zoneCount(s);
+  return zoneInfo(s, z == null ? clamp(Math.floor(u * n), 0, n - 1) : z);
+}
 
 function orient(s) { // a = low end: the left end, or the bottom end of a steep string
   const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
@@ -1665,7 +1681,7 @@ function zoneInfo(s, z) {
 function stringLabel(s) {
   const I = INSTRUMENTS[s.inst].name;
   if (INSTRUMENTS[s.inst].kit) return I;
-  return `${I} · ${NOTE_NAMES[strRoot(s)]} ${SCALES[strScale(s)].short}${s.mode === 'chord' ? ' · chords' : ''}`;
+  return `${I} · ${NOTE_NAMES[strRoot(s)]} ${SCALES[strScale(s)].short}${s.mode === 'chord' ? ' · chords' : ''}${isFretless(s) ? ' · fretless' : ''}`;
 }
 
 function addString(p, q, opts = {}) {
@@ -1673,7 +1689,7 @@ function addString(p, q, opts = {}) {
   const s = {
     id: state.nextStringId++, a: { x: p.x, y: p.y }, b: { x: q.x, y: q.y },
     inst: opts.inst || 'guitar', scale: opts.scale || null, root: opts.root == null ? null : opts.root,
-    oct: opts.oct || 0, mode: opts.mode || 'notes',
+    oct: opts.oct || 0, mode: opts.mode || 'notes', tune: opts.tune === 'fretless' ? 'fretless' : 'tet',
     vib: { amp: 0, t0: 0, pos: 0.5 }, flash: { z: -1, t: 0 }, last: {}, track: {}, dwell: {}, holds: {}, voices: [], pull: null, bend: 0, born: nowS(), touched: nowS(),
   };
   orient(s);
@@ -1712,14 +1728,14 @@ function clearStrings() {
 function pluck(s, u, vel, down, quiet) {
   initAudio();
   const n = zoneCount(s), z = clamp(Math.floor(u * n), 0, n - 1);
-  const info = zoneInfo(s, z);
+  const info = noteAt(s, u, z);
   const ev = info.drum ? { inst: s.inst, drum: info.drum, vel } : { inst: s.inst, notes: info.notes, vel, down: !!down };
   const vs = playEvent(ev, audio.ctx.currentTime, audio.music);
   keepVoices(s, vs);
   captureEvent(ev);
   const t = nowS();
   s.vib = { amp: 6 + 16 * vel, t0: t, pos: clamp(u, 0.08, 0.92) };
-  s.flash = { z, t };
+  s.flash = { z, u, t };
   s.touched = t;
   state.counts.plucks++;
   const p = { x: lerp(s.a.x, s.b.x, u), y: lerp(s.a.y, s.b.y, u) };
@@ -1752,8 +1768,8 @@ const HOLD_IN = 10, HOLD_OUT = 22, HOLD_AFTER = 0.14;
 function holdNote(s, h, t) {
   initAudio();
   const n = zoneCount(s), z = clamp(Math.floor(h.u * n), 0, n - 1);
-  const info = zoneInfo(s, z);
-  const key = z + ':' + (info.notes ? info.notes.join(',') : info.drum);
+  const info = noteAt(s, h.u, z);
+  const key = isFretless(s) ? 'f:' + Math.round(h.u * 96) : z + ':' + (info.notes ? info.notes.join(',') : info.drum);
   if (key === h.key) return;                          // same note as before (also catches chord changes)
   h.key = key; h.z = z;
   const p = { x: lerp(s.a.x, s.b.x, h.u), y: lerp(s.a.y, s.b.y, h.u) };
@@ -1763,7 +1779,7 @@ function holdNote(s, h, t) {
     h.voices = playEvent(ev, audio.ctx.currentTime, audio.music, { held: true });
     for (const v of h.voices) if (s.bend) bendVoice(v, s.bend, 0.001);
     h.cap = captureEvent(Object.assign({ hold: 0.2 }, ev)); h.capT = t;
-    s.flash = { z, t }; s.touched = t; state.counts.plucks++;
+    s.flash = { z, u, t }; s.touched = t; state.counts.plucks++;
     burst(p, INSTRUMENTS[s.inst].color, 8, 140);
     notePop(s, p, info.label, t);
   } else {
@@ -1926,6 +1942,7 @@ function menuItems(s, kind) {
     !drums && { id: 'tone', label: 'Tone', color: '#f3efe6' },
     !drums && { id: 'key', label: 'Key', color: '#f3efe6' },
     !drums && { id: 'mode', label: s.mode === 'chord' ? 'Single notes' : 'Chords', color: '#f3efe6' },
+    !drums && { id: 'tune', label: isFretless(s) ? '12-TET steps' : 'Fretless', color: '#8ff0c0' },
     !drums && { id: 'up', label: 'Higher', color: '#f3efe6' },
     !drums && { id: 'down', label: 'Lower', color: '#f3efe6' },
     { id: 'remove', label: 'Remove', color: '#ff6b6b' },
@@ -2006,6 +2023,7 @@ function chooseMenu(it) {
     default:
       if (it.id === 'instrument' || it.id === 'tone' || it.id === 'key') openMenu(s, it.id, false);
       else if (it.id === 'mode') { s.mode = s.mode === 'chord' ? 'notes' : 'chord'; audition(); closeMenu(); }
+      else if (it.id === 'tune') { s.tune = strTune(s) === 'fretless' ? 'tet' : 'fretless'; audition(); closeMenu(); }
       else if (it.id === 'up') { s.oct = clamp(s.oct + 1, -2, 2); audition(); openMenu(s, 'hub'); }
       else if (it.id === 'down') { s.oct = clamp(s.oct - 1, -2, 2); audition(); openMenu(s, 'hub'); }
       else if (it.id === 'remove') removeString(s);
@@ -2014,8 +2032,8 @@ function chooseMenu(it) {
   refreshUI();
 }
 function pluckQuiet(s) { // a short preview so a choice can be heard
-  const info = zoneInfo(s, 0);
-  playEvent(info.drum ? { inst: s.inst, drum: info.drum, vel: 0.6 } : { inst: s.inst, notes: info.notes, vel: 0.55 }, audio.ctx.currentTime, audio.music);
+  const info = noteAt(s, 0, 0);
+  playEvent({ inst: s.inst, notes: info.notes, vel: 0.55 }, audio.ctx.currentTime, audio.music);
   s.vib = { amp: 9, t0: nowS(), pos: 0.3 };
 }
 
@@ -2285,34 +2303,69 @@ function updateHandHover() {
   for (const h of state.hands) if (h) setHover(h, h.present ? buttonAt(h.cursor) : null);
 }
 
-// ── touch play: one finger plays, two fingers create and edit ──
-function touchEditBegin() {
-  const [a, b] = [...state.touches.values()];
-  if (!a || !b) return;
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+// ── touch play: one finger plays; holding two or three fingers arms create/edit ──
+const TOUCH_HOLD = 0.3;                          // seconds the fingers must stay still
+function touchEditPoints(E = state.touchEdit) { return E ? E.points.filter(p => state.touches.has(p.id)) : []; }
+function touchEditPair(E = state.touchEdit) {
+  const pts = touchEditPoints(E);
+  let best = [pts[0], pts[1]], bd = pts.length > 1 ? dist(pts[0], pts[1]) : -1;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const d = dist(pts[i], pts[j]);
+    if (d > bd) { bd = d; best = [pts[i], pts[j]]; }
+  }
+  return best;
+}
+function touchEditTarget(mid) {
   const big = px => Math.max(px, 30 * state.ui);
   const ep = nearestEndpoint(mid, big(48)), dot = nearestDot(mid, big(40)), body = nearestBody(mid, Math.max(24, 12 * state.ui));
-  state.touchEdit = { a, b, a0: { x: a.x, y: a.y }, b0: { x: b.x, y: b.y },
-    sep0: dist(a, b), mid0: mid, t0: nowS(), kind: null, anchor: null, from: null, ca: null, cb: null,
-    playing: dist(a, b) > 130 * state.ui,
-    target: ep ? { kind: 'drag', anchor: ep } : dot ? { kind: 'dot', anchor: dot } : body ? { kind: 'grab', anchor: body } : null };
+  return ep ? { kind: 'drag', anchor: ep } : dot ? { kind: 'dot', anchor: dot } : body ? { kind: 'grab', anchor: body } : null;
+}
+function touchEditMid(pts) {
+  return pts.length ? { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length } : null;
+}
+function touchEditBegin() {
+  const pts = [...state.touches.values()].slice(0, 3);
+  if (pts.length < 2) return;
+  const mid = touchEditMid(pts.slice(0, 2));
+  const E = { points: pts, starts: pts.map(p => ({ x: p.x, y: p.y })), mid0: mid, t0: nowS(),
+    hold: false, mode: null, kind: null, anchor: null, from: null, timer: 0, target: touchEditTarget(mid) };
+  state.touchEdit = E;
+  E.timer = setTimeout(touchEditHold, TOUCH_HOLD * 1000);
+}
+function touchEditAdd() {              // a third finger joins before the hold completes
+  const E = state.touchEdit;
+  if (!E) return touchEditBegin();
+  const pt = [...state.touches.values()].slice(-1)[0];
+  if (!pt || E.points.some(p => p.id === pt.id)) return;
+  E.points.push(pt); E.starts.push({ x: pt.x, y: pt.y });
+  if (!E.hold && !E.kind) { clearTimeout(E.timer); E.timer = setTimeout(touchEditHold, TOUCH_HOLD * 1000); }
+}
+function touchEditHold() {
+  const E = state.touchEdit;
+  if (!E) return;
+  const pts = touchEditPoints(E);
+  if (pts.length < 2 || pts.some((p, i) => dist(p, E.starts[i]) > 22 * state.ui)) return;
+  E.hold = true;
+  E.mode = E.target ? 'edit' : 'create';
+  if (E.mode === 'create') touchEditPreview();
+}
+function touchEditPreview() {
+  const [a, b] = touchEditPair();
+  if (a && b) state.preview = { a: { x: a.x, y: a.y }, b: { x: b.x, y: b.y } };
 }
 function touchEditMove() {
   const E = state.touchEdit;
-  if (!E || !state.touches.has(E.a.id) || !state.touches.has(E.b.id)) return;
-  const sep = dist(E.a, E.b), mid = { x: (E.a.x + E.b.x) / 2, y: (E.a.y + E.b.y) / 2 };
-  // starting on a string means editing it; starting in open air means a two-finger pinch creates a string
-  const gap = E.target ? 120 : E.playing ? 90 : 45;
-  if (!E.kind && Math.abs(sep - E.sep0) > gap * state.ui) {
-    E.kind = 'create';
-    if (sep >= E.sep0) { E.ca = E.a; E.cb = E.b; }
-    else { E.ca = E.a0; E.cb = E.b0; }
+  if (!E) return;
+  const pts = touchEditPoints(E);
+  if (pts.length < 2) return;
+  const mid = touchEditMid(pts);
+  if (!E.hold) {                       // moving before the hold completes means playing, not creating
+    if (E.target && E.target.kind !== 'dot' && dist(mid, E.mid0) > 28 * state.ui) {
+      E.hold = true; E.mode = 'edit'; E.kind = E.target.kind; E.anchor = E.target.anchor;
+    } else return;
   }
-  if (E.kind === 'create') {
-    state.preview = { a: { x: E.ca.x, y: E.ca.y }, b: { x: E.cb.x, y: E.cb.y } };
-    return;
-  }
-  if (!E.playing && !E.kind && dist(mid, E.mid0) > 28 * state.ui) {
+  if (E.mode === 'create') { touchEditPreview(); return; }
+  if (!E.kind && dist(mid, E.mid0) > 28 * state.ui) {
     if (E.target) { E.kind = E.target.kind; E.anchor = E.target.anchor; }
     else { E.kind = 'fx'; E.from = { ...E.mid0 }; }
   }
@@ -2331,31 +2384,34 @@ function touchEditClick(p) {
 }
 function touchEditEnd(leavingId) {
   const E = state.touchEdit;
-  if (!E || (leavingId != null && leavingId !== E.a.id && leavingId !== E.b.id)) return;
+  if (!E || !E.points.some(p => p.id === leavingId)) return;
+  clearTimeout(E.timer);
   state.touchEdit = null;
-  const a = state.touches.get(E.a.id) || E.a, b = state.touches.get(E.b.id) || E.b;
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  if (E.kind === 'create') {
+  const pts = touchEditPoints(E);
+  const mid = touchEditMid(pts) || E.mid0;
+  if (E.mode === 'create') {
     state.preview = null;
-    if (dist(E.ca, E.cb) >= 90) addString({ x: E.ca.x, y: E.ca.y }, { x: E.cb.x, y: E.cb.y });
+    const [a, b] = touchEditPair(E);
+    if (a && b && dist(a, b) >= 90) addString({ x: a.x, y: a.y }, { x: b.x, y: b.y });
     else toast('Spread your fingers further apart to make a string.');
   } else if (E.kind === 'drag') {
     orient(E.anchor.s);
     if (strLen(E.anchor.s) < 60) removeString(E.anchor.s);
   } else if (E.kind === 'grab') releasePull(E.anchor);
   else if (E.kind === 'fx') endFx();
-  else if (!E.playing && dist(mid, E.mid0) < 40 * state.ui && nowS() - E.t0 < 1.2) touchEditClick(mid);
+  else if (dist(mid, E.mid0) < 40 * state.ui && nowS() - E.t0 < 1.2) touchEditClick(mid);
 }
 function setTouchPlay(on) {
   const enabled = !!on;
   if (!enabled) {
+    clearTimeout(state.touchEdit && state.touchEdit.timer);
     state.touches.clear(); state.touchEdit = null; state.preview = null;
     endFx(); forgetPointer('touch');
   }
   state.mode = enabled ? 'touch' : 'mouse';
   refreshUI();
   toast(enabled
-    ? 'Touch play: sweep one or more fingers to play. Hold two close to edit, or spread them apart to make a string.'
+    ? 'Touch play: sweep one or more fingers to play. Hold two or three fingers still to create or edit; then spread them to make a string.'
     : 'Touch play off: drag one finger to make and edit strings.', 4200);
 }
 
@@ -2369,6 +2425,7 @@ function initPointer() {
     state.touches.set(e.pointerId, { id: e.pointerId, x: p.x, y: p.y, t0: t, press: true });
     if (state.menu && !menuContains(p, 60)) closeMenu();
     if (state.touches.size === 2) touchEditBegin();
+    else if (state.touches.size === 3) touchEditAdd();
   };
   const touchMove = (e, p) => {
     const pt = state.touches.get(e.pointerId);
@@ -2380,9 +2437,9 @@ function initPointer() {
     const pt = state.touches.get(e.pointerId);
     if (!pt) return;
     pt.x = p.x; pt.y = p.y;
+    touchEditEnd(e.pointerId);
     state.touches.delete(e.pointerId);
     forgetPointer('touch' + e.pointerId);
-    touchEditEnd(e.pointerId);
   };
   cv.addEventListener('pointerdown', e => {
     initAudio();
@@ -2561,6 +2618,14 @@ function drawString(s, t) {
   const live = amp > 0.35;
   const n = zoneCount(s);
   const U = Math.max(1, state.ui);                       // canvas units per CSS pixel
+  const isF = isFretless(s);
+  const base = isF ? fretlessBase(s) : 0;
+  const marks = isF ? [{ u: 0, label: 'root' }, { u: 0.5, label: '+12' }, { u: 1, label: '+24' }] : [];
+  if (isF) {
+    const a4 = (69 - base) / FRETLESS_SPAN;              // A4 = 440 Hz, the main tuning reference
+    if (Math.abs(a4 - 0.5) < 0.02) marks[1] = { u: 0.5, label: 'A4 · 440 Hz', strong: true };
+    else if (a4 > 0.04 && a4 < 0.96) marks.push({ u: a4, label: 'A4 · 440 Hz', strong: true });
+  }
 
   // a pulled string runs taut through the point it is held at
   const pl = s.pull, px = pl ? s.a.x + dx * pl.u + (dy / L) * pl.d : 0, py = pl ? s.a.y + dy * pl.u - (dx / L) * pl.d : 0;
@@ -2599,7 +2664,8 @@ function drawString(s, t) {
   // the note just played lights up its stretch of string
   const fa = t - s.flash.t;
   if (s.flash.z >= 0 && fa < 0.35) {
-    const u0 = s.flash.z / n, u1 = (s.flash.z + 1) / n;
+    const u0 = isF && s.flash.u != null ? s.flash.u - 0.012 : s.flash.z / n;
+  const u1 = isF && s.flash.u != null ? s.flash.u + 0.012 : (s.flash.z + 1) / n;
     g.strokeStyle = hexA(col, 0.8 * (1 - fa / 0.35)); g.lineWidth = 5;
     g.beginPath(); g.moveTo(s.a.x + dx * u0, s.a.y + dy * u0); g.lineTo(s.a.x + dx * u1, s.a.y + dy * u1); g.stroke();
   }
@@ -2608,11 +2674,25 @@ function drawString(s, t) {
   const tick = Math.max(5, 4 * U), cap = Math.max(10, 8 * U);
   g.strokeStyle = 'rgba(251,246,233,0.6)'; g.lineWidth = Math.max(1.2, 0.9 * U);
   g.beginPath();
-  for (let z = 1; z < n; z++) {
+  if (isF) {
+    for (let k = 1; k < FRETLESS_SPAN; k++) {            // fine, unfretted semitone grid
+      const u = k / FRETLESS_SPAN, x = s.a.x + dx * u, y = s.a.y + dy * u;
+      g.moveTo(x - nx * tick * 0.55, y - ny * tick * 0.55); g.lineTo(x + nx * tick * 0.55, y + ny * tick * 0.55);
+    }
+  } else for (let z = 1; z < n; z++) {
     const x = s.a.x + dx * z / n, y = s.a.y + dy * z / n;
     g.moveTo(x - nx * tick, y - ny * tick); g.lineTo(x + nx * tick, y + ny * tick);
   }
   g.stroke();
+  if (isF) {
+    g.strokeStyle = 'rgba(255,194,74,0.9)'; g.lineWidth = Math.max(1.6, 1.1 * U);
+    g.beginPath();
+    for (const m of marks) {
+      const x = s.a.x + dx * m.u, y = s.a.y + dy * m.u;
+      g.moveTo(x - nx * tick * 1.8, y - ny * tick * 1.8); g.lineTo(x + nx * tick * 1.8, y + ny * tick * 1.8);
+    }
+    g.stroke();
+  }
   g.strokeStyle = IVORY; g.lineWidth = Math.max(2.2, 1.6 * U);
   g.beginPath();
   for (const e of [s.a, s.b]) { g.moveTo(e.x - nx * cap, e.y - ny * cap); g.lineTo(e.x + nx * cap, e.y + ny * cap); }
@@ -2632,12 +2712,15 @@ function drawString(s, t) {
 
   if (state.settings.labels && (s.near || t - s.touched < 2.6) && !state.menu) {
     label(stringLabel(s), mx + nx * Math.max(31, 22 * U), my + ny * Math.max(31, 22 * U), 13, col);
-    const names = [];
-    for (let z = 0; z < n; z++) names.push(zoneInfo(s, z).label);
-    const size = n > 11 ? 9.5 : 11;
-    for (let z = 0; z < n; z++) {
+    if (isF) {
+      for (const m of marks) {
+        const x = s.a.x + dx * m.u, y = s.a.y + dy * m.u;
+        label(m.label, x - nx * Math.max(15, 11 * U), y - ny * Math.max(15, 11 * U), m.strong ? 12 : 10.5,
+          m.strong ? '#ffc24a' : 'rgba(251,246,233,0.9)', 'center', m.strong ? 700 : 500);
+      }
+    } else for (let z = 0; z < n; z++) {
       const u = (z + 0.5) / n;
-      label(names[z], s.a.x + dx * u - nx * Math.max(15, 11 * U), s.a.y + dy * u - ny * Math.max(15, 11 * U), size, 'rgba(251,246,233,0.9)', 'center', 500);
+      label(zoneInfo(s, z).label, s.a.x + dx * u - nx * Math.max(15, 11 * U), s.a.y + dy * u - ny * Math.max(15, 11 * U), size, 'rgba(251,246,233,0.9)', 'center', 500);
     }
   }
 }
@@ -3134,7 +3217,7 @@ function snapshot(name) {
   const r = v => Math.round(v * 10) / 10;
   return { v: 1, name, saved: Date.now(), w: W, h: H, shape: state.shape, key: state.key, scale: state.scale,
     beat: transport.beat, bpm: transport.bpm, parts: Object.assign({}, transport.parts), loopBars: transport.loopBars, follow: transport.follow,
-    strings: state.strings.map(s => ({ a: [r(s.a.x), r(s.a.y)], b: [r(s.b.x), r(s.b.y)], inst: s.inst, scale: s.scale, root: s.root, oct: s.oct, mode: s.mode })),
+    strings: state.strings.map(s => ({ a: [r(s.a.x), r(s.a.y)], b: [r(s.b.x), r(s.b.y)], inst: s.inst, scale: s.scale, root: s.root, oct: s.oct, mode: s.mode, tune: s.tune })),
     layers: transport.layers.map(L => ({ len: L.len, offset: L.offset, vol: L.vol, muted: L.muted, events: L.events })) };
 }
 
@@ -3164,7 +3247,8 @@ function applySetup(d) {
     const b = { x: num(o.b[0], -200, 4000, 0) * sx, y: num(o.b[1], -200, 4000, 0) * sy };
     if (dist(a, b) < 40) continue;
     addString(a, b, { silent: true, inst: own(INSTRUMENTS, o.inst) ? o.inst : 'guitar', scale: own(SCALES, o.scale) ? o.scale : null,
-      root: o.root == null ? null : Math.round(num(o.root, 0, 11, 0)), oct: Math.round(num(o.oct, -2, 2, 0)), mode: o.mode === 'chord' ? 'chord' : 'notes' });
+      root: o.root == null ? null : Math.round(num(o.root, 0, 11, 0)), oct: Math.round(num(o.oct, -2, 2, 0)), mode: o.mode === 'chord' ? 'chord' : 'notes',
+      tune: o.tune === 'fretless' ? 'fretless' : 'tet' });
   }
   for (const L of (Array.isArray(d.layers) ? d.layers : []).slice(0, MAX_LAYERS)) {
     const len = [16, 32, 64, 128].includes(L && L.len) ? L.len : 0;
@@ -3175,7 +3259,7 @@ function applySetup(d) {
       const base = { inst: e.inst, pos: num(e.pos, 0, len - 0.001, 0), vel: num(e.vel, 0.05, 1, 0.6) };
       if (typeof e.drum === 'string' && /^[a-zA-Z]{2,10}$/.test(e.drum)) events.push(Object.assign(base, { drum: e.drum }));
       else if (Array.isArray(e.notes) && e.notes.length && e.notes.length <= 6) {
-        const notes = e.notes.map(n => Math.round(num(n, 12, 110, 60)));
+        const notes = e.notes.map(n => Math.round(num(n, 12, 110, 60) * 100) / 100);
         events.push(Object.assign(base, { notes, down: !!e.down }, e.hold ? { hold: num(e.hold, 0.08, 30, 0.3) } : {}));
       }
     }
@@ -3417,9 +3501,9 @@ function currentHint() {
       return M.kind === 'tone' ? 'Now hold still on a tone, or tap it.' : 'Hold still on a choice, or tap it.';
     }
     if (state.preview) return 'Release to place the string.';
-    if (!state.strings.length) return 'Hold two fingers close together, then spread them apart to make a string.';
+    if (!state.strings.length) return 'Hold two or three fingers still for a moment, then spread them apart to make a string.';
     if (state.counts.plucks < 3) return 'Sweep one or more fingers across a string to play it.';
-    if (state.counts.plucks < 14) return 'Hold two fingers close on a string’s dot to change it, or spread two fingers to make a string.';
+    if (state.counts.plucks < 14) return 'Hold two or three fingers still on a string’s dot to change it, then spread them to make a string.';
     return '';
   }
   if (M) {
@@ -3753,7 +3837,7 @@ function frame() {
     if (dets) processHands(dets, t);
     if (state.mode === 'touch' && !modalOpen()) {
       const E = state.touchEdit;
-      const busy = E && (!E.playing || E.kind === 'create') ? [E.a, E.b] : [];
+      const busy = E && (E.hold || E.kind) ? E.points : [];
       for (const pt of state.touches.values()) if (!busy.includes(pt)) sweep('touch' + pt.id, pt, t);
     }
     const mo = state.mouse;      // the mouse plays like a fingertip: checked every frame, so resting on a string counts
@@ -3928,7 +4012,8 @@ function boot() {
   }
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
     demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount,
-    setTouchPlay, touchInfo: () => ({ touches: state.touches.size, edit: state.touchEdit && state.touchEdit.kind }) };
+    setTouchPlay, touchInfo: () => ({ touches: state.touches.size, hold: !!(state.touchEdit && state.touchEdit.hold), mode: state.touchEdit && state.touchEdit.mode, edit: state.touchEdit && state.touchEdit.kind }),
+    noteAt, fretlessInfo, zoneInfo };
 }
 boot();
 
