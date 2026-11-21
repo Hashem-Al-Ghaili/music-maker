@@ -3,51 +3,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0d11">
+<meta name="theme-color" content="#1b120c">
 <title>String Mirror</title>
 <meta name="author" content="Hasem Al-Ghaili; forked & extended by Nemanja Bocokic / ccne4mocc">
 <style>
 :root {
-  --ink: #0b0d11; --panel: rgba(11, 13, 17, 0.9); --line: rgba(251, 246, 233, 0.16);
-  --text: #f3efe6; --mute: rgba(243, 239, 230, 0.62); --amber: #ffc24a; --red: #ff5a4f; --mint: #8ff0c0;
+  /* warm, tactile instrument palette — light text on deep walnut, amber as the lit accent */
+  --ink: #1a120c; --panel: rgba(30, 22, 16, 0.92); --card: #241a12; --line: rgba(246, 226, 198, 0.18);
+  --text: #f8efe2; --mute: rgba(248, 239, 226, 0.70); --amber: #f0b455; --amber-hi: #f7c77e;
+  --red: #e8624f; --mint: #86d9a8;
+  --wood: #6b3f24; --wood-lo: #352317;
   --font: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 * { box-sizing: border-box; }
 html { height: 100%; }
-html, body { margin: 0; height: 100%; background: #000; color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: #0c0806; color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
 body { height: 100dvh; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 #cam { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
-#stageWrap { position: fixed; inset: 0; display: grid; place-items: center; justify-content: center; align-content: center; background: #000; overflow: hidden; }
+main#stageWrap { position: fixed; inset: 0; display: grid; place-items: center; justify-content: center; align-content: center; background: radial-gradient(ellipse at 50% 40%, #1a1009 0%, #0a0604 78%); overflow: hidden; }
 #stage { display: block; touch-action: none; cursor: crosshair; }
 
-.bar { position: fixed; left: 0; right: 0; z-index: 5; background: var(--panel); display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
+.bar { position: fixed; left: 0; right: 0; z-index: 5; background: var(--panel); box-shadow: inset 0 1px 0 rgba(255, 230, 190, 0.06); display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
 #top { top: 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 #dock { bottom: 0; border-top: 1px solid var(--line); flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px 12px; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .brand { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px; margin-right: 8px; white-space: nowrap; }
 .brand b { color: var(--amber); font-weight: 700; }
 .spacer { flex: 1; }
-.lab { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.lab { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
 .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
 .group { display: flex; align-items: center; gap: 6px; }
 .val { min-width: 34px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .val.wide { min-width: 132px; }
 .val.mid { min-width: 56px; }
 
-button { font: inherit; color: var(--text); background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 10px;
+button { font: inherit; color: var(--text); background: rgba(246, 214, 170, 0.07); border: 1px solid var(--line); border-radius: 10px;
   height: 40px; padding: 0 14px; cursor: pointer; white-space: nowrap; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 235, 205, 0.05);
   transition: background 0.12s, border-color 0.12s, transform 0.08s; }
-button:hover { background: rgba(255, 255, 255, 0.13); }
+button:hover { background: rgba(246, 214, 170, 0.14); }
 button:active { transform: scale(0.97); }
 button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 button:disabled { opacity: 0.4; cursor: default; }
-button.hand-hover { background: rgba(255, 194, 74, 0.22); border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
+button.hand-hover { background: rgba(240, 180, 85, 0.22); border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: -2px; }
 button.sq { width: 40px; padding: 0; justify-content: center; font-size: 18px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip.on { background: var(--c, var(--amber)); border-color: var(--c, var(--amber)); color: var(--ink); }
+/* a shape cue as well as colour, so active state survives greyscale and forced colours */
+.chip.on::before, .dock-tabs button.on::before, #followBtn.on::before { content: "✓"; font-size: 11px; margin-right: 5px; }
 .layer { display: inline-flex; }
 .layer .chip { border-radius: 10px 0 0 10px; }
-.layer .x { border-radius: 0 10px 10px 0; border-left: 0; width: 34px; padding: 0; justify-content: center; font-size: 18px; }
+.layer .x { border-radius: 0 10px 10px 0; border-left: 0; width: 40px; padding: 0; justify-content: center; font-size: 18px; }
 
 /* touch-play controls: only on touch screens / the mobile layout */
 .touch-only, #touchBtn { display: none; }
@@ -55,16 +62,17 @@ html.mobile .touch-only, html.coarse .touch-only, html.mobile #touchBtn, html.co
 #touchBtn { padding: 0; justify-content: center; }
 #touchBtn.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
 #touchBtn svg { display: block; }
-.info-box { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; margin: 4px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 194, 74, 0.08); font-size: 13px; line-height: 1.45; color: var(--mute); }
-.info-box b { color: var(--amber); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.info-box { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; margin: 4px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(240, 180, 85, 0.10); font-size: 13px; line-height: 1.45; color: var(--mute); }
+.info-box b { color: var(--amber); font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase; }
 .info-box span::before { content: "· "; color: var(--amber); }
 .touch-only.info-box { display: none; }
 html.mobile .touch-only.info-box, html.coarse .touch-only.info-box { display: flex; }
 
-#playBtn { min-width: 96px; justify-content: center; }
-#playBtn i { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-#playBtn.on { background: var(--mint); border-color: var(--mint); color: var(--ink); }
-#playBtn.on i { width: 10px; height: 10px; border: 0; background: currentColor; }
+#playBtn, #railPlayBtn { min-width: 96px; justify-content: center; }
+#playBtn i, #railPlayBtn i { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+#playBtn.on, #railPlayBtn.on { background: var(--mint); border-color: var(--mint); color: var(--ink); }
+#playBtn.on i, #railPlayBtn.on i { width: 10px; height: 10px; border: 0; background: currentColor; }
+#railPlayBtn { display: none; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); flex: none; }
 #recBtn.recording { background: var(--red); border-color: var(--red); color: #fff; }
 #recBtn.recording .dot { background: #fff; border-radius: 2px; }
@@ -76,9 +84,9 @@ html.mobile .touch-only.info-box, html.coarse .touch-only.info-box { display: fl
 @keyframes blink { 50% { opacity: 0.25; } }
 
 #leds { display: flex; gap: 4px; margin-left: auto; }
-#leds i { width: 9px; height: 9px; border-radius: 2px; background: rgba(251, 246, 233, 0.16); }
-#leds i.b { background: rgba(251, 246, 233, 0.34); }
-#leds i.on { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+#leds i { width: 9px; height: 9px; border-radius: 2px; background: rgba(248, 239, 226, 0.16); }
+#leds i.b { background: rgba(248, 239, 226, 0.34); }
+#leds i.on { background: var(--amber); border: 1px solid var(--amber-hi); }
 
 #hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: 132px; z-index: 4; background: var(--panel); border: 1px solid var(--line);
   padding: 9px 16px; border-radius: 999px; font-size: 15px; font-weight: 600; opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 92vw; text-align: center; }
@@ -87,20 +95,23 @@ html.mobile .touch-only.info-box, html.coarse .touch-only.info-box { display: fl
   padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: 90vw; text-align: center; }
 #toast.show { opacity: 1; }
 
-.modal { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; background: rgba(4, 5, 8, 0.72); padding: 20px; }
+.modal { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; background: rgba(12, 7, 4, 0.78); padding: 20px; }
 .modal.open { display: grid; }
-.card { background: #12151b; border: 1px solid var(--line); border-radius: 16px; padding: 26px 28px; width: min(640px, 100%); max-height: 92vh; overflow: auto; }
+.card { background: linear-gradient(180deg, #2b2016 0%, var(--card) 60%, #1d150e 100%); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 232, 198, 0.09), 0 18px 50px rgba(0, 0, 0, 0.55);
+  padding: 26px 28px; width: min(640px, 100%); max-height: 92vh; overflow: auto; }
+.card :is(h1, h2, h3)[tabindex="-1"]:focus { outline: none; }
 .card h1 { margin: 0 0 4px; font-size: 30px; letter-spacing: 0.02em; }
-.card h1 b { color: var(--amber); }
+.card h1 b, .card h2 b { color: var(--amber); }
 .card h2 { margin: 0 0 14px; font-size: 20px; }
-.card h3 { margin: 18px 0 8px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+.card h3 { margin: 18px 0 8px; font-size: 12.5px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--amber); }
 .card p { margin: 0 0 12px; color: var(--mute); line-height: 1.5; }
 .card ol, .card ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.6; }
 .card li { margin-bottom: 4px; }
 .card li b { color: var(--text); }
 .card .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
 .primary { background: var(--amber); border-color: var(--amber); color: var(--ink); height: 46px; padding: 0 20px; font-size: 15px; }
-.primary:hover { background: #ffd27a; }
+.primary:hover { background: var(--amber-hi); }
 .steps { list-style: none; padding: 0; margin: 14px 0 6px; display: grid; gap: 10px; }
 .steps li { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; margin: 0; }
 .steps .n { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--amber); color: var(--amber); display: grid; place-items: center; font-weight: 700; }
@@ -116,7 +127,29 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--amber); ju
 .hide { display: none !important; }
 
 @media (max-width: 900px) { .brand { display: none; } .val.wide { min-width: 110px; } #leds { display: none; } }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+/* reduced motion: drop travel and looping effects, keep short opacity/colour state changes */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color !important; transition-duration: 0.12s !important; scroll-behavior: auto !important; }
+  #count.show { animation: none !important; opacity: 1; }
+  #leds i.on, #filmBar.filming .dot { animation: none !important; }
+}
+
+/* contextual help popover (works on touch, where title= tooltips never appear) */
+#tipPop { position: fixed; z-index: 31; top: calc(60px + env(safe-area-inset-top, 0px)); left: 12px; width: min(330px, calc(100vw - 24px));
+  padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 232, 198, 0.08), 0 12px 34px rgba(0, 0, 0, 0.55); font-size: 13px; line-height: 1.45; }
+#tipPop[hidden] { display: none; }
+#tipPop b { color: var(--amber); }
+#tipPop div + div { margin-top: 6px; }
+.help-group { border-bottom: 1px solid var(--line); padding: 4px 0; }
+.help-group:first-of-type { border-top: 1px solid var(--line); }
+.help-group summary { cursor: pointer; color: var(--amber); font-weight: 700; font-size: 12.5px; letter-spacing: 0.07em;
+  text-transform: uppercase; padding: 10px 0; list-style: none; }
+.help-group summary::-webkit-details-marker { display: none; }
+.help-group summary::after { content: "+"; float: right; font-size: 16px; line-height: 1; }
+.help-group[open] summary::after { content: "−"; }
+.help-group[open] summary { margin-bottom: 4px; }
 
 /* panels added with setups, mixer and filming */
 .card.wide { width: min(780px, 100%); }
@@ -185,7 +218,6 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
 #dock .panel-head #playBtn { flex: 0 0 auto; }
 #dock .panel-head #layerBtn { flex: 0 1 auto; min-width: 0; }
 #dock .panel-head #layerLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#dock .panel-head #mixBtn { flex: 0 0 auto; }
 
 /* phones: bigger controls, no desktop-only bits */
 html.mobile { font-size: 15px; }
@@ -197,17 +229,23 @@ html.mobile .brand { display: none; }
 html.mobile #leds { display: none; }
 html.mobile .val { min-width: 40px; }
 html.mobile .val.wide { min-width: 122px; }
-html.mobile .layer .x { width: 40px; }
+html.mobile .layer .x { width: 44px; }
 html.mobile #hint { font-size: 14px; padding: 10px 16px; max-width: calc(100vw - 24px); }
 html.mobile #toast { font-size: 14px; max-width: calc(100vw - 24px); }
 html.mobile #filmBar { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); }
-@media (max-width: 700px) {                     /* phone-sized screens get edge-to-edge dialogs */
-  html.mobile .modal { padding: 0; }
-  html.mobile .card, html.mobile .card.wide { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0; padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
-}
+/* phone-sized screens get edge-to-edge dialogs in both portrait and landscape */
+html.mobile .modal { padding: 0; }
+html.mobile .card, html.mobile .card.wide { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(130px + env(safe-area-inset-bottom, 0px)); }
+/* long dialogs scroll their text while the action bar stays put below it */
+html.mobile .card:has(> .card-scroll) { display: flex; flex-direction: column; overflow: hidden;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+html.mobile .card-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
+html.mobile .card:has(> .card-scroll) > .actions { position: static; }
+html.mobile #startModal .actions button { flex: 1 1 auto; }
 html.mobile .card h1 { font-size: 26px; }
 html.mobile .card h2 { font-size: 19px; }
-html.mobile .card .actions { position: sticky; bottom: 0; z-index: 1; background: #12151b; padding: 12px 0; margin-top: 14px; }
+html.mobile .card .actions { position: sticky; bottom: 0; z-index: 1; background: var(--card); box-shadow: 0 -8px 16px rgba(13, 8, 5, 0.6); padding: 12px 0; margin-top: 14px; }
 html.mobile .card .actions button { flex: 1 1 100%; justify-content: center; }
 html.mobile .set { grid-template-columns: 1fr; gap: 6px; }
 html.mobile .set input[type=range] { margin-bottom: 12px; }
@@ -228,8 +266,9 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 .side .panel-head { flex-direction: column; gap: 6px; padding: 6px; min-height: 0; }
 .side #top .panel-head { padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
 .side #dock .panel-head { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
-.side .panel.collapsed .panel-head > :not(.panel-toggle):not(.rail-label) { display: none; }
-.side .panel.collapsed #touchBtn { display: none; }
+.side .panel.collapsed .panel-head > :not(.panel-toggle):not(.rail-label):not(#touchBtn):not(#railPlayBtn) { display: none; }
+/* keep the essential transport reachable while the rails are folded */
+.side .panel.collapsed #touchBtn, .side .panel.collapsed #railPlayBtn { display: inline-flex; width: 46px; min-width: 0; padding: 0; justify-content: center; }
 .side .panel.collapsed .rail-label { display: block; writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); margin: 4px 0; }
 .side .panel:not(.collapsed) .rail-label { display: none; }
 .side .panel:not(.collapsed) .panel-title { display: block; }
@@ -255,23 +294,25 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 .layout-btn, html.mobile .layout-btn { height: auto; min-height: 138px; padding: 16px; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 8px; white-space: normal; text-align: left; border-radius: 14px; }
 .layout-btn b { font-size: 19px; }
 .layout-btn span { font-size: 13px; font-weight: 500; line-height: 1.45; color: var(--mute); }
-.layout-btn.current { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.layout-btn.current { border-color: var(--amber); outline: 1px solid var(--amber); outline-offset: -1px; }
 .layout-btn.current::after { content: "Current"; align-self: flex-start; margin-top: auto; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: var(--amber); border-radius: 999px; padding: 4px 10px; }
 #layoutDetected { color: var(--amber); font-weight: 600; min-height: 18px; }
 </style>
 </head>
 <body>
+<h1 class="sr-only">String Mirror — a playable string instrument</h1>
 <video id="cam" playsinline muted></video>
-<div id="stageWrap"><canvas id="stage" width="1280" height="720"></canvas></div>
+<main id="stageWrap"><canvas id="stage" width="1280" height="720" role="img" aria-label="The instrument stage. Stretch and pluck strings with the camera, mouse or touch play using the controls in the bars."></canvas></main>
 
 <header id="top" class="bar panel open">
   <div class="panel-head">
     <div class="brand">String <b>Mirror</b></div>
     <span class="panel-title">Controls</span>
     <button id="recBtn"><span class="dot"></span><span id="recLabel">Record</span><span id="recTime"></span></button>
-    <button id="filmBtn" title="Hide the controls, count 3-2-1 and record">Film</button>
-    <button id="touchBtn" class="sq" aria-pressed="false" aria-label="Touch play" title="Touch play: one or more fingers pluck the strings. Hold two fingers close to edit, or spread them apart to make a string."><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="3.4" fill="currentColor"/><path d="M12 2.2v3M12 18.8v3M2.2 12h3M18.8 12h3M5.1 5.1l2.1 2.1M16.8 16.8l2.1 2.1M18.9 5.1l-2.1 2.1M7.2 16.8l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <button id="filmBtn" aria-describedby="desc-film">Film</button>
+    <button id="touchBtn" class="sq" aria-pressed="false" aria-label="Touch play" aria-describedby="desc-touch"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="3.4" fill="currentColor"/><path d="M12 2.2v3M12 18.8v3M2.2 12h3M18.8 12h3M5.1 5.1l2.1 2.1M16.8 16.8l2.1 2.1M18.9 5.1l-2.1 2.1M7.2 16.8l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <span class="spacer"></span>
+    <button id="tipBtn" class="sq" aria-label="What the buttons do" aria-expanded="false" aria-controls="tipPop">?</button>
     <button id="topToggle" class="panel-toggle" aria-expanded="true" aria-controls="topBody" aria-label="Hide the controls" title="Show or hide the controls"><span class="chev"></span></button>
     <span class="rail-label">Controls</span>
   </div>
@@ -280,7 +321,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <div class="group"><span class="lab">Tone</span><button id="toneDown" class="sq" aria-label="Previous tone">‹</button><span id="toneVal" class="val wide"></span><button id="toneUp" class="sq" aria-label="Next tone">›</button></div>
     <div class="group"><span class="lab">Repeat</span><button id="repeatBtn" class="sq" aria-pressed="true" aria-label="Toggle repeat while held">⟳</button></div>
     <div class="spacer"></div>
-    <button id="recMode" title="What the Record button captures: the picture with sound, or the sound alone">Video + sound</button>
+    <button id="recMode" aria-describedby="desc-recmode">Video + sound</button>
     <button id="setupsBtn">Setups</button>
     <button id="clearBtn">Clear</button>
     <button id="helpBtn">Help</button>
@@ -290,12 +331,19 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 <div id="filmBar"><span class="dot"></span><span id="filmTime">0:00</span><button id="filmStop">Stop</button><button id="cleanExit">Show controls</button></div>
 <div id="count" aria-hidden="true"></div>
 
-<div id="hint"></div>
+<div id="hint" role="status" aria-live="polite"></div>
 <div id="toast" role="status"></div>
+<div id="tipPop" hidden role="note" aria-label="Button help">
+  <div><b>Film</b> — <span id="desc-film">hides the controls, counts 3-2-1, then records.</span></div>
+  <div><b>Touch play</b> — <span id="desc-touch">one finger plucks a string; hold two close fingers, then spread them to add a string.</span></div>
+  <div><b>Record</b> — <span id="desc-recmode">captures the picture with sound, or sound alone. Film and Record cannot run together.</span></div>
+  <div><b>Follow chords</b> — <span id="desc-follow">strings retune to the chord the beat is playing, so everything fits.</span></div>
+  <div><b>Undo</b> — <span id="desc-undo">removes the layer you added last.</span></div>
+</div>
 
 <footer id="dock" class="bar panel open">
   <div id="dockBody" class="panel-body"><div class="panel-inner">
-    <div id="beatPanel" class="dock-view">
+    <div id="beatPanel" class="dock-view" role="tabpanel" aria-labelledby="beatTab">
       <div class="row">
         <button id="playBtn"><i></i><span id="playLabel">Play</span></button>
         <button id="layerBtn"><span class="dot"></span><span id="layerLabel">Record a layer</span></button>
@@ -303,7 +351,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <div class="row">
         <span class="lab">Beat</span><div id="beatChips" class="chips"></div>
         <div class="group"><span class="lab">Tempo</span><button id="bpmDown" class="sq" aria-label="Slower">−</button><span id="bpmVal" class="val"></span><button id="bpmUp" class="sq" aria-label="Faster">+</button></div>
-        <button id="followBtn" class="chip" title="Strings retune to the chord the beat is playing, so everything fits">Follow chords</button><span id="chordNow" class="val"></span>
+        <button id="followBtn" class="chip" aria-pressed="false" aria-describedby="desc-follow">Follow chords</button><span id="chordNow" class="val"></span>
         <div id="leds" aria-hidden="true"></div>
       </div>
       <div class="row">
@@ -311,31 +359,32 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
         <span class="sep"></span>
         <span class="lab">Your layers</span>
         <div class="group"><button id="barsDown" class="sq" aria-label="Shorter layer">‹</button><span id="barsVal" class="val mid"></span><button id="barsUp" class="sq" aria-label="Longer layer">›</button></div>
-        <button id="undoLayer" title="Remove the layer you added last">Undo</button>
+        <button id="undoLayer" aria-describedby="desc-undo">Undo</button>
         <div id="layerChips" class="chips"></div>
       </div>
     </div>
-    <div id="mixerPanel" class="dock-view hide">
+    <div id="mixerPanel" class="dock-view hide" role="tabpanel" aria-labelledby="mixerTab">
       <div id="mixSliders"></div>
       <p class="mix-note">Stems are each beat part and each layer as its own WAV, plus a full mix, at the current tempo and key. Live playing is not included.</p>
       <div class="row"><button id="stemsBtn" class="primary">Export stems (.zip)</button><span id="stemsNote" class="small status"></span></div>
     </div>
   </div></div>
   <div class="panel-head">
-    <span class="panel-title">Controls</span>
-    <div class="dock-tabs">
-      <button id="beatTab" class="on" aria-selected="true">Beat &amp; record</button>
-      <button id="mixerTab" aria-selected="false">Mixer</button>
+    <span class="panel-title">Beat &amp; layers</span>
+    <div class="dock-tabs" role="tablist" aria-label="Bottom panel">
+      <button id="beatTab" class="on" role="tab" aria-selected="true" aria-controls="beatPanel">Beat &amp; record</button>
+      <button id="mixerTab" role="tab" aria-selected="false" aria-controls="mixerPanel">Mixer</button>
     </div>
     <span class="spacer"></span>
+    <button id="railPlayBtn" class="sq" aria-label="Play or stop the beat" aria-pressed="false" title="Play or stop the beat"><i></i></button>
     <button id="dockToggle" class="panel-toggle" aria-expanded="true" aria-controls="dockBody" aria-label="Hide the beat and layer controls" title="Show or hide the beat and layer controls"><span class="chev"></span></button>
     <span class="rail-label">Controls</span>
   </div>
 </footer>
 
-<div id="landingModal" class="modal open">
+<div id="landingModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="landingTitle">
   <div class="card">
-    <h1>String <b>Mirror</b></h1>
+    <h2 id="landingTitle" data-dialog-title tabindex="-1">String <b>Mirror</b></h2>
     <p class="small" style="margin-bottom:10px">Created by: Hasem Al-Ghaili<br>forked &amp; extended by Nemanja Bocokic / ccne4mocc</p>
     <p>Choose the layout that fits this screen.</p>
     <div class="layout-choice">
@@ -353,9 +402,10 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
   </div>
 </div>
 
-<div id="startModal" class="modal">
+<div id="startModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="startTitle">
   <div class="card">
-    <h1>String <b>Mirror</b></h1>
+   <div class="card-scroll">
+    <h2 id="startTitle" data-dialog-title tabindex="-1">String <b>Mirror</b></h2>
     <p class="small" style="margin-bottom:10px">Created by: Hasem Al-Ghaili<br>forked &amp; extended by Nemanja Bocokic / ccne4mocc</p>
     <p>Stretch strings in the air, give each one an instrument, and play them with your fingers.</p>
     <ol class="steps">
@@ -363,27 +413,27 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><span class="n">2</span><span><b>Choose.</b> A palette of 24 instruments opens on the new string. Point at one and hold still (or pinch it), then pick its tone: major, minor and more.</span></li>
       <li><span class="n">3</span><span><b>Play.</b> Sweep a fingertip across a string. Where you cross it decides the note. Add a beat, loop your own layers, and record the result.</span></li>
     </ol>
+    <div id="touchInfoBox" class="touch-only info-box">
+      <b>Touch play controls</b>
+      <span>One finger sweeps a string; several fingers play several strings at once.</span>
+      <span>Hold two fingers still, then spread them apart to add a string or edit one.</span>
+    </div>
+    <div id="startStatus" aria-live="polite"></div>
+    <p class="small" style="margin-top:10px">Use Chrome or Edge. The hand tracker is bundled with the app, so camera mode works offline. Sit 40 to 80 cm from the camera with light on your hands.</p>
+   </div>
     <div class="actions">
       <button id="startCam" class="primary">Start camera</button>
       <button id="startMouse">Play with the mouse instead</button>
       <button id="startTouch" class="touch-only">Play with touch</button>
-      <div id="touchInfoBox" class="touch-only info-box">
-        <b>Touch play controls</b>
-        <span>One finger sweeps a string to play it; several fingers play several strings at once.</span>
-        <span>Hold two or three fingers still, then spread them apart to add a string.</span>
-        <span>Hold two fingers on a string's badge and tap to change its instrument or tuning.</span>
-        <span>The finger icon in the top bar switches Touch play on and off.</span>
-      </div>
     </div>
-    <div id="startStatus"></div>
-    <p class="small" style="margin-top:10px">Use Chrome or Edge. The hand tracker loads from the internet the first time. Sit 40 to 80 cm from the camera with light on your hands.</p>
   </div>
 </div>
 
-<div id="helpModal" class="modal">
+<div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="card">
-    <h2>How to play</h2>
-    <h3>Strings</h3>
+   <div class="card-scroll">
+    <h2 id="helpTitle" data-dialog-title tabindex="-1">How to play</h2>
+    <details class="help-group" open><summary>Strings</summary>
     <ul>
       <li><b>Make a string:</b> pinch with both hands, pull apart, let go. Longer strings hold more notes. Or open <b>Setups</b> for a ready-made stage.</li>
       <li><b>Pluck it:</b> sweep an open fingertip across it. The marks along the string are the notes, low at the end with the round cap. Faster sweeps are louder.</li>
@@ -393,7 +443,8 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Resize or move an end:</b> pinch an end and drag it. Shrink a string to nothing to delete it.</li>
       <li><b>Fretless / 12-TET:</b> the string menu switches between smooth fretless pitch (gliding across two octaves) and stepped 12-tone equal temperament. Fretless strings mark their root, octaves and the A4 = 440 Hz reference.</li>
     </ul>
-    <h3>Pointing and pressing</h3>
+    </details>
+    <details class="help-group"><summary>Pointing and pressing</summary>
     <ul>
       <li>The amber ring between your thumb and index finger is your pointer. It closes as you pinch.</li>
       <li><b>Menus:</b> point at a choice and hold still for a moment, or pinch it.</li>
@@ -401,39 +452,45 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears. On a touch screen, hold two fingers still in open air and move them together; the active settings appear above nearby strings.</li>
       <li><b>Playing fingers:</b> Settings chooses how many fingertips pluck - 1 (index only) up to 4 (index through pinky).</li>
     </ul>
-    <h3>Touch screens</h3>
+    </details>
+    <details class="help-group"><summary>Touch screens</summary>
     <ul>
       <li><b>Touch play</b> (the finger icon in the top bar) makes one finger pluck strings, and several fingers play several strings at once. Tap it again to go back to dragging with one finger.</li>
       <li><b>Make a string:</b> hold two or three fingers still for a moment, then spread them apart and let go. You can also start them apart and pinch them together to make a string between their starting points.</li>
       <li><b>Edit:</b> hold two close fingers still on a string’s badge and tap to change its instrument. Move them together to drag an end, bend a string, or work the air pad.</li>
     </ul>
-    <h3>Building a track</h3>
+    </details>
+    <details class="help-group"><summary>Building a track</summary>
     <ul>
       <li><b>Beat:</b> pick a style, then switch its parts on one at a time: kick, snare, hats, bass, chords. Bass and chords follow the key and tone at the top.</li>
       <li><b>Follow chords:</b> while the beat plays, every string retunes to the chord of the current bar, so whatever you play fits.</li>
       <li><b>Your layers:</b> press <b>Record a layer</b>, wait for the count, play a phrase. It loops, and you play the next layer on top. Tap a layer to mute it, × to remove it, <b>Undo</b> to remove the last one.</li>
       <li><b>Mixer:</b> the bottom bar has two panels: <b>Beat &amp; record</b> and <b>Mixer</b>. The mixer has volume sliders for your playing, the beat and each layer, plus <b>Export stems</b> for separate audio files.</li>
     </ul>
-    <h3>Recording and filming</h3>
+    </details>
+    <details class="help-group"><summary>Recording and filming</summary>
     <ul>
       <li><b>Record:</b> records the performance. The button beside it switches between <b>Video + sound</b> and <b>Sound only</b>. Press Record again to stop, then save the video, or the audio as MP3 or WAV.</li>
       <li><b>Film:</b> hides every control, counts 3-2-1 and starts recording. Stop with the small button in the corner or the Esc key.</li>
       <li><b>Stage shape:</b> follows the layout and screen rotation - 16:9 on desktop and in landscape, 9:16 in mobile portrait.</li>
       <li><b>Phones:</b> the top and bottom bars fold to slim handles. Tap a chevron to open one at a time. In landscape they move to the left and right edges. Settings has a <b>Switch layout</b> button if the wrong one was picked.</li>
     </ul>
-    <h3>If tracking struggles</h3>
+    </details>
+    <details class="help-group"><summary>If tracking struggles</summary>
     <ul>
       <li>Keep hands 40 to 80 cm from the camera, palms toward the screen, with light on them.</li>
       <li>If pinches are missed or fire too easily, adjust <b>Pinch sensitivity</b> in Settings.</li>
     </ul>
+    </details>
     <p class="small">Keys: Space plays or stops the beat, R records, F films, L records a layer, Z removes the last layer, H hides or shows the controls, Esc closes menus. With the mouse, Shift-drag works the air pad.</p>
+   </div>
     <div class="actions"><button class="primary" data-close="helpModal">Got it</button></div>
   </div>
 </div>
 
-<div id="setModal" class="modal">
+<div id="setModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
   <div class="card">
-    <h2>Settings</h2>
+    <h2 id="settingsTitle" data-dialog-title tabindex="-1">Settings</h2>
     <div class="set">
       <label for="sSens">Pinch sensitivity<small>Higher closes the pinch sooner. Lower needs fingers to touch.</small></label><input id="sSens" type="range" min="0.6" max="1.7" step="0.05">
       <label for="sFingers">Playing fingers<small>1 = index finger, up to 4 = index through pinky.</small></label><input id="sFingers" type="range" min="1" max="4" step="1">
@@ -448,13 +505,14 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <label for="sBackend">Tracker backend<small>Auto tries GPU then CPU.</small></label><select id="sBackend"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
       <label for="sRepeat">Repeat note while held<small>Rolls/retriggers the note while a finger stays on a string.</small></label><input id="sRepeat" type="checkbox">
     </div>
+    <p class="small">To force a layout for one visit, add <code>#mobile</code> or <code>#desktop</code> to the page address.</p>
     <div class="actions"><button id="layoutSwitch">Switch layout</button><button class="primary" data-close="setModal">Done</button></div>
   </div>
 </div>
 
-<div id="setupsModal" class="modal">
+<div id="setupsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="setupsTitle">
   <div class="card wide">
-    <h2>Setups</h2>
+    <h2 id="setupsTitle" data-dialog-title tabindex="-1">Setups</h2>
     <h3>Start from a layout</h3>
     <div id="starterList" class="tiles"></div>
     <h3>Your setups</h3>
@@ -473,9 +531,9 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
   </div>
 </div>
 
-<div id="saveModal" class="modal">
+<div id="saveModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="takeTitle">
   <div class="card">
-    <h2 id="takeTitle">Your recording</h2>
+    <h2 id="takeTitle" data-dialog-title tabindex="-1">Your recording</h2>
     <video id="takeVideo" controls playsinline></video>
     <audio id="takeAudio" class="hide" controls></audio>
     <p id="takeNote" class="small"></p>
@@ -2097,23 +2155,36 @@ function updateMenu(pointers, dt) {
 }
 
 // ───────────────────────── camera, hand tracking, gestures, mouse ─────────────────────────
-const TRACKER = Object.assign({
+const LOCAL_TRACKER = {
+  bundle: 'vendor/mediapipe/vision_bundle.mjs',
+  wasm: 'vendor/mediapipe/wasm',
+  model: 'vendor/mediapipe/hand_landmarker.task',
+};
+const CDN_TRACKER = {
   bundle: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs',
   wasm: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm',
   model: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-}, window.__SM_PATHS || {});
+};
+const TRACKER = Object.assign({}, LOCAL_TRACKER, window.__SM_PATHS || {});
 
 const cam = { video: null, tracker: null, lastVT: -1, delegate: '', frames: 0, fpsT: 0, trackFps: 0 };
 const modalOpen = () => !!document.querySelector('.modal.open');
 
 async function loadTracker() {
-  const vision = await import(TRACKER.bundle);
-  const files = await vision.FilesetResolver.forVisionTasks(TRACKER.wasm);
+  let vision, paths = TRACKER;
+  try {
+    vision = await import(TRACKER.bundle);
+  } catch (e) {
+    // a file:// page cannot import a local module — fall back to the CDN copy
+    paths = CDN_TRACKER;
+    vision = await import(paths.bundle);
+  }
+  const files = await vision.FilesetResolver.forVisionTasks(paths.wasm);
   const S = state.settings;
   const backend = S.trackerBackend === 'cpu' ? 'CPU' : S.trackerBackend === 'gpu' ? 'GPU' : null;
   const numHands = S.maxHands === 1 ? 1 : 2;
   const make = delegate => vision.HandLandmarker.createFromOptions(files, {
-    baseOptions: { modelAssetPath: TRACKER.model, delegate },
+    baseOptions: { modelAssetPath: paths.model, delegate },
     runningMode: 'VIDEO', numHands,
     minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5,
   });
@@ -2428,11 +2499,12 @@ function touchEditClick(p) {
   const b = buttonAt(p);
   if (b) { state.counts.clicks++; b.click(); }
 }
-function touchEditEnd(leavingId) {
+function touchEditEnd(leavingId, cancelled = false) {
   const E = state.touchEdit;
   if (!E || !E.points.some(p => p.id === leavingId)) return;
   clearTimeout(E.timer);
   state.touchEdit = null;
+  if (cancelled) { state.preview = null; return; }   // an interrupted gesture must not commit a string
   const pts = touchEditPoints(E);
   const mid = touchEditMid(pts) || E.mid0;
   if (E.mode === 'create') {
@@ -2479,11 +2551,11 @@ function initPointer() {
     pt.x = p.x; pt.y = p.y;
     touchEditMove();
   };
-  const touchUp = (e, p) => {
+  const touchUp = (e, p, cancelled = false) => {
     const pt = state.touches.get(e.pointerId);
     if (!pt) return;
     pt.x = p.x; pt.y = p.y;
-    touchEditEnd(e.pointerId);
+    touchEditEnd(e.pointerId, cancelled);
     state.touches.delete(e.pointerId);
     forgetPointer('touch' + e.pointerId);
   };
@@ -2520,13 +2592,14 @@ function initPointer() {
     }
     m.x = p.x; m.y = p.y; m.t = t;
   });
-  const up = e => {
-    if (state.mode === 'touch' && e.pointerType !== 'mouse') { touchUp(e, pos(e)); return; }
+  const up = (e, cancelled = false) => {
+    if (state.mode === 'touch' && e.pointerType !== 'mouse') { touchUp(e, pos(e), cancelled); return; }
     if (!m.down) return;
     m.down = false;
     const p = pos(e), d = m.drag;
     m.drag = null;
     if (!d) return;
+    if (cancelled) { state.preview = null; return; }
     if (d.type === 'new') {
       const pv = state.preview; state.preview = null;
       if (pv && dist(pv.a, pv.b) >= 60) addString(pv.a, pv.b);
@@ -2538,7 +2611,7 @@ function initPointer() {
     else if (d.type === 'dot' && dist(p, d.from) < 10) openMenu(d.s, 'hub');
   };
   cv.addEventListener('pointerup', up);
-  cv.addEventListener('pointercancel', up);
+  cv.addEventListener('pointercancel', e => up(e, true));
   cv.addEventListener('pointerleave', () => { if (!m.down) { m.inside = false; m.x = -1; forgetPointer('mouse'); } });
 }
 
@@ -2629,10 +2702,11 @@ function label(text, x, y, size, color, align = 'center', weight = 600, outline 
   const fs = Math.max(size, 10 * state.ui);   // keep text legible when the stage is shown small
   g.font = `${weight} ${fs}px ${FONT}`;
   g.textAlign = align; g.textBaseline = 'middle';
-  if (outline) { g.lineWidth = 3.5; g.strokeStyle = 'rgba(6,8,12,0.78)'; g.lineJoin = 'round'; g.strokeText(text, x, y); }
+  if (outline) { g.lineWidth = 3.5; g.strokeStyle = 'rgba(12,7,4,0.8)'; g.lineJoin = 'round'; g.strokeText(text, x, y); }
   g.fillStyle = color; g.fillText(text, x, y);
 }
 
+let bgGrad = null, bgKey = '';
 function drawBackdrop() {
   const v = cam.video;
   if (state.mode === 'camera' && v && v.readyState >= 2) {
@@ -2641,13 +2715,21 @@ function drawBackdrop() {
     g.translate(W, 0); g.scale(-1, 1);
     g.drawImage(v, f.ox, f.oy, f.vw * f.sc, f.vh * f.sc);
     g.restore();
-    g.fillStyle = `rgba(8,10,14,${state.settings.dim})`;
+    g.fillStyle = `rgba(20,12,7,${state.settings.dim})`;
     g.fillRect(0, 0, W, H);
   } else {
-    const gr = g.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, '#0b0e13'); gr.addColorStop(1, '#161b22');
-    g.fillStyle = gr; g.fillRect(0, 0, W, H);
-    g.strokeStyle = 'rgba(255,255,255,0.03)'; g.lineWidth = 1;
+    const cv = $('#stage');
+    const key = W + 'x' + H + '@' + cv.width;
+    if (key !== bgKey) {
+      bgKey = key;
+      bgGrad = g.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0, '#1b120c');
+      bgGrad.addColorStop(0.55, '#2a1b10');
+      bgGrad.addColorStop(1, '#3a2617');
+    }
+    g.fillStyle = bgGrad; g.fillRect(0, 0, W, H);
+    // faint grain lines give the stage a warm, tactile surface
+    g.strokeStyle = 'rgba(246,214,170,0.035)'; g.lineWidth = 1;
     g.beginPath();
     for (let y = 60; y < H; y += 60) { g.moveTo(0, y + 0.5); g.lineTo(W, y + 0.5); }
     g.stroke();
@@ -3263,7 +3345,7 @@ function setShape(shape, auto = false) {
   }
   state.particles = []; state.pops = [];
   W = w; H = h; state.shape = shape;
-  const cv = $('#stage'); cv.width = W; cv.height = H;
+  syncCanvasBacking();
   // a vertical picture uses only the middle of the camera frame, so ask the camera for more detail
   try {
     const tr = cam.video && cam.video.srcObject && cam.video.srcObject.getVideoTracks()[0];
@@ -3498,15 +3580,54 @@ async function exportStems(onStatus) {
 }
 
 // ───────────────────────── interface wiring ─────────────────────────
-function openModal(id) { $('#' + id).classList.add('open'); }
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+let modalStack = [], modalReturn = null;
+const shellIds = ['cam', 'stageWrap', 'top', 'dock', 'filmBar', 'hint', 'toast', 'count', 'tipPop'];
+function focusDialogTop(d) {
+  const t = d.querySelector('[data-dialog-title]') || d.querySelector('.card');
+  if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
+}
+function syncInert() {
+  const open = modalStack.length > 0;
+  shellIds.forEach(id => { const el = $('#' + id); if (el) el.inert = open; });
+}
+function toggleTip(force) {
+  const pop = $('#tipPop'), btn = $('#tipBtn');
+  const show = typeof force === 'boolean' ? force : pop.hidden;
+  pop.hidden = !show;
+  btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+}
+function openModal(id) {
+  const d = $('#' + id);
+  if (!d || d.classList.contains('open')) return;
+  if (!modalStack.length) {
+    const a = document.activeElement;
+    modalReturn = a && a.getClientRects().length ? a : null;
+  }
+  d.classList.add('open');
+  modalStack.push(id);
+  syncInert();
+  focusDialogTop(d);
+}
 function closeModal(id) {
-  $('#' + id).classList.remove('open');
+  const d = $('#' + id);
+  if (!d || !d.classList.contains('open')) return;
+  d.classList.remove('open');
+  modalStack = modalStack.filter(x => x !== id);
   if (id === 'saveModal') { try { $('#takeVideo').pause(); $('#takeAudio').pause(); } catch (_) {} }
+  syncInert();
+  if (modalStack.length) focusDialogTop($('#' + modalStack[modalStack.length - 1]));
+  else {
+    const back = modalReturn && modalReturn !== document.body && document.contains(modalReturn) && modalReturn.getClientRects().length
+      ? modalReturn : $('#playBtn');
+    if (back && back.focus) back.focus({ preventScroll: true });
+    modalReturn = null;
+  }
 }
 
 function buildChips() {
-  $('#beatChips').innerHTML = BEAT_ORDER.map(id => `<button class="chip" data-beat="${id}">${BEATS[id].name}</button>`).join('');
-  $('#partChips').innerHTML = PARTS.map(p => `<button class="chip" data-part="${p}"></button>`).join('');
+  $('#beatChips').innerHTML = BEAT_ORDER.map(id => `<button class="chip" data-beat="${id}" aria-pressed="false">${BEATS[id].name}</button>`).join('');
+  $('#partChips').innerHTML = PARTS.map(p => `<button class="chip" data-part="${p}" aria-pressed="false"></button>`).join('');
   $('#leds').innerHTML = Array.from({ length: 16 }, (_, i) => `<i class="${i % 4 === 0 ? 'b' : ''}"></i>`).join('');
 }
 
@@ -3518,15 +3639,27 @@ function refreshUI() {
   $('#barsVal').textContent = transport.loopBars === 1 ? '1 bar' : transport.loopBars + ' bars';
   $('#playBtn').classList.toggle('on', transport.playing);
   $('#playLabel').textContent = transport.playing ? 'Stop' : 'Play';
+  const railPlay = $('#railPlayBtn');
+  if (railPlay) {
+    railPlay.classList.toggle('on', transport.playing);
+    railPlay.setAttribute('aria-pressed', transport.playing ? 'true' : 'false');
+    railPlay.setAttribute('aria-label', transport.playing ? 'Stop the beat' : 'Play the beat');
+  }
   const B = BEATS[transport.beat];
-  $$('#beatChips .chip').forEach(b => b.classList.toggle('on', b.dataset.beat === transport.beat));
-  $$('#partChips .chip').forEach((b, i) => { b.textContent = B.labels[i]; b.classList.toggle('on', transport.parts[b.dataset.part]); });
+  $$('#beatChips .chip').forEach(b => {
+    const on = b.dataset.beat === transport.beat;
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  $$('#partChips .chip').forEach((b, i) => {
+    const on = !!transport.parts[b.dataset.part];
+    b.textContent = B.labels[i]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   const R = transport.rec;
   $('#layerBtn').classList.toggle('arming', !!R && R.state === 'countin');
   $('#layerBtn').classList.toggle('recording', !!R && R.state === 'rec');
   $('#layerLabel').textContent = R ? (R.state === 'rec' ? 'Recording… play now' : 'Get ready…') : 'Record a layer';
   $('#layerChips').innerHTML = transport.layers.map(L =>
-    `<span class="layer"><button class="chip ${L.muted ? '' : 'on'}" data-layer="${L.id}" style="--c:${INSTRUMENTS[L.inst].color}" title="Mute or unmute">${L.name} · ${L.len / 16} bar${L.len > 16 ? 's' : ''}</button><button class="x" data-del="${L.id}" title="Remove this layer" aria-label="Remove layer">×</button></span>`).join('');
+    `<span class="layer"><button class="chip ${L.muted ? '' : 'on'}" data-layer="${L.id}" style="--c:${INSTRUMENTS[L.inst].color}" aria-label="${L.name} — ${L.muted ? 'muted' : 'playing'}" aria-pressed="${L.muted ? 'false' : 'true'}">${L.name} · ${L.len / 16} bar${L.len > 16 ? 's' : ''}</button><button class="x" data-del="${L.id}" aria-label="Remove ${L.name}">×</button></span>`).join('');
   $('#recBtn').classList.toggle('recording', rec.on);
   $('#recLabel').textContent = rec.on ? 'Stop' : 'Record';
   $('#recMode').textContent = rec.mode === 'video' ? 'Video + sound' : 'Sound only';
@@ -3541,18 +3674,34 @@ function refreshUI() {
   }
   $('#filmBtn').disabled = rec.on || film.counting;
   $('#followBtn').classList.toggle('on', transport.follow);
+  $('#followBtn').setAttribute('aria-pressed', transport.follow ? 'true' : 'false');
   $('#undoLayer').disabled = !transport.layers.length && !transport.rec;
   $('#filmBar').classList.toggle('filming', film.on || film.counting);
   if (!rec.on) $('#filmTime').textContent = film.counting ? 'Get ready' : '0:00';
   renderMixSliders();
   const sw = $('#layoutSwitch');
   if (sw) sw.textContent = layoutMode === 'mobile' ? 'Switch to desktop layout' : 'Switch to mobile layout';
+  syncRangeLabels();
+}
+
+// spoken values for range controls, so "1.3" is not announced without meaning
+const RANGE_LABELS = {
+  sSens: v => `Pinch sensitivity ${(+v).toFixed(2)}`,
+  sFingers: v => `${v} playing ${+v === 1 ? 'finger' : 'fingers'}`,
+  sDim: v => `${Math.round(+v / 0.7 * 100)} percent camera darkening`,
+  sVol: v => `${Math.round(+v * 100)} percent volume`,
+};
+function syncRangeLabels() {
+  for (const id in RANGE_LABELS) {
+    const el = $('#' + id);
+    if (el) el.setAttribute('aria-valuetext', RANGE_LABELS[id](el.value));
+  }
 }
 
 function mixSlidersHTML() {
   const pct = v => Math.round(v * 100) + '%';
   const row = (label, sub, key, v, extra = '') => `<div class="mrow"><span class="grow"><b>${label}</b><small>${sub}</small></span>${extra}`
-    + `<input type="range" min="0" max="1.5" step="0.01" value="${v}" data-vol="${key}" aria-label="${label} volume"><span class="val">${pct(v)}</span></div>`;
+    + `<input type="range" min="0" max="1.5" step="0.01" value="${v}" data-vol="${key}" aria-label="${label} volume" aria-valuetext="${pct(v)}"><span class="val">${pct(v)}</span></div>`;
   return row('Your playing', 'What you play live on the strings', 'live', state.mix.live)
     + row('Beat', BEATS[transport.beat].name, 'beat', state.mix.beat)
     + transport.layers.map((L, i) => row(`Layer ${i + 1}`, `${L.name} · ${L.len / 16} bar${L.len > 16 ? 's' : ''}`, 'L' + L.id, L.vol,
@@ -3704,8 +3853,18 @@ function scheduleMode() {
   layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; updateLayoutMode(); layoutStage(); });
 }
 
+// keep a crisp backing store on hi-dpi screens while all drawing stays in virtual W×H units
+function syncCanvasBacking() {
+  const cv = $('#stage');
+  if (!cv || !g) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.round(W * dpr), h = Math.round(H * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
 function layoutStage() {
   const cv = $('#stage');
+  syncCanvasBacking();
   const compact = layoutMode === 'mobile';
   const contain = Math.min(innerWidth / W, innerHeight / H);
   const cover = Math.max(innerWidth / W, innerHeight / H);
@@ -3778,6 +3937,7 @@ function initUI() {
   on('barsDown', () => { transport.loopBars = step([1, 2, 4, 8], transport.loopBars, -1); });
   on('barsUp', () => { transport.loopBars = step([1, 2, 4, 8], transport.loopBars, 1); });
   on('playBtn', togglePlay);
+  on('railPlayBtn', togglePlay);
   on('layerBtn', armLayer);
   on('recBtn', () => { rec.on ? stopRecording() : startRecording(); });
   on('clearBtn', clearStrings);
@@ -3871,8 +4031,9 @@ function initUI() {
   const S = state.settings;
   const bind = (id, key, fn) => {
     const el = $('#' + id);
+    const say = () => { if (RANGE_LABELS[id]) el.setAttribute('aria-valuetext', RANGE_LABELS[id](el.value)); };
     if (el.type === 'checkbox') { el.checked = S[key]; el.addEventListener('change', () => { S[key] = el.checked; fn && fn(); }); }
-    else { el.value = S[key]; el.addEventListener('input', () => { S[key] = +el.value; fn && fn(); }); }
+    else { el.value = S[key]; say(); el.addEventListener('input', () => { S[key] = +el.value; say(); fn && fn(); }); }
   };
   bind('sSens', 'pinchSens'); bind('sFingers', 'fingerCount'); bind('sSkel', 'skeleton'); bind('sDim', 'dim'); bind('sLabels', 'labels');
   bind('sQuant', 'quantize'); bind('sDebug', 'debug');
@@ -3896,7 +4057,7 @@ function initUI() {
       console.error(err);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError');
       status(denied ? 'The camera did not open. Allow camera access for this page and try again, or play with the mouse.'
-        : 'The hand tracker could not load (it needs an internet connection). You can still play with the mouse. ' + (err && err.message ? '(' + err.message + ')' : ''));
+        : 'The hand tracker could not load. If you opened this file directly, serve the folder over http so the bundled tracker can load. You can still play with the mouse. ' + (err && err.message ? '(' + err.message + ')' : ''));
       $('#startCam').disabled = false;
     }
   });
@@ -3914,17 +4075,39 @@ function initUI() {
     if (e.propertyName === 'grid-template-rows' || e.propertyName === 'width') layoutStage();
   }));
   addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'checkbox') return;
+    if (e.target.closest && e.target.closest('input:not([type=range]):not([type=checkbox]), textarea, select, [contenteditable="true"]')) return;
+    if (e.key === 'Tab' && modalStack.length) {
+      const d = $('#' + modalStack[modalStack.length - 1]);
+      const f = [...d.querySelectorAll(FOCUSABLE)].filter(el => el.getClientRects().length);
+      if (f.length) {
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !d.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || !d.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (!$('#tipPop').hidden) { toggleTip(false); return; }
+      if (film.on || film.counting) { stopFilm(); return; }
+      closeMenu();
+      if (modalStack.length) {
+        // Esc on the forced start screen is a safe way in: choose mouse play
+        if (modalStack.includes('startModal')) { initAudio(); state.mode = 'mouse'; }
+        [...modalStack].forEach(closeModal);
+      }
+      return;
+    }
+    if (modalStack.length || !$('#tipPop').hidden) return;   // shortcuts must never fire behind a dialog
     if (e.code === 'Space') { e.preventDefault(); initAudio(); togglePlay(); }
     if (e.key === 'r' || e.key === 'R') { if (film.on) stopFilm(); else $('#recBtn').click(); }
     if (e.key === 'l' || e.key === 'L') $('#layerBtn').click();
     if (e.key === 'f' || e.key === 'F') $('#filmBtn').click();
     if (e.key === 'z' || e.key === 'Z') undoLayer();
     if (e.key === 'h' || e.key === 'H') toggleClean();
-    if (e.key === 'Escape') {
-      if (film.on || film.counting) { stopFilm(); return; }
-      closeMenu(); $$('.modal.open').forEach(m => m.id !== 'startModal' && m.classList.remove('open'));
-    }
+  });
+  $('#tipBtn').addEventListener('click', () => toggleTip());
+  document.addEventListener('pointerdown', e => {
+    if (!$('#tipPop').hidden && !e.target.closest('#tipPop, #tipBtn')) toggleTip(false);
   });
   refreshSetups();
 
