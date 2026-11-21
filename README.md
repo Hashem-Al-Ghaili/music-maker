@@ -7,6 +7,7 @@
 - Play with touch screen (like with mouse on desktop version).
 - Add/Edit string functions have been moved to 2-finger-tip + hold / pinching+hold) and its info in the play style selection. 
 - experimental fretless/TET based tuning.
+- Single self-contained `index.html`: the MediaPipe hand-tracking assets are embedded, so the app works offline with no vendor files.
 
 
 **Created by: Hasem Al-Ghaili**  
@@ -57,11 +58,13 @@ adb install -r dist/string-mirror-debug.apk
 
 Prerequisites: Node/npm, Java 21, Android SDK with command-line tools (`sdkmanager`), and `adb` for installing. `ANDROID_HOME` defaults to `/opt/android-sdk`. Generated folders inside `build-android-apk/` (`node_modules/`, `www/`, `android/`, `dist/`) are ignored by git.
 
-The first run needs internet to download MediaPipe's model/wasm from its CDN, and the app requests the camera permission when you tap **Start camera**. The mouse/touch-only modes work without a network connection. For a Play Store release APK you must additionally sign the build with your own keystore.
+`index.html` is fully self-contained: MediaPipe's model, WASM and JS are bundled inside it, so hand tracking works offline. The camera permission is requested when you tap **Start camera**. For a Play Store release APK you must additionally sign the build with your own keystore.
+
+To upgrade the bundled tracker version, update the pinned URLs in `build-android-apk/scripts/inline-mediapipe.py` and run `python3 build-android-apk/scripts/inline-mediapipe.py` from the repo root. The CDN remains a fallback if the embedded copy cannot be loaded.
 
 ## Notes
 
 - Use Chrome or Edge. The camera needs a secure (https) page, which GitHub Pages provides.
-- Hand tracking uses MediaPipe Hand Landmarker, loaded from a CDN on first use.
+- Hand tracking uses MediaPipe Hand Landmarker, bundled into `index.html` (CDN only as a fallback).
 - All sound is synthesised in the browser; there are no audio samples.
 - MP3 export uses [lamejs](https://github.com/zhuker/lamejs) (LGPL-3.0), embedded in the page.
