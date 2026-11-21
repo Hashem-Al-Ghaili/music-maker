@@ -385,9 +385,9 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <button id="beatTab" class="on" role="tab" aria-selected="true" aria-controls="beatPanel">Beat &amp; record</button>
       <button id="mixerTab" role="tab" aria-selected="false" aria-controls="mixerPanel">Mixer</button>
     </div>
+    <button id="dockToggle" class="panel-toggle" aria-expanded="true" aria-controls="dockBody" aria-label="Hide the beat and layer controls" title="Show or hide the beat and layer controls"><span class="chev"></span></button>
     <span class="spacer"></span>
     <button id="railPlayBtn" class="sq" aria-label="Play or stop the beat" aria-pressed="false" title="Play or stop the beat"><i></i></button>
-    <button id="dockToggle" class="panel-toggle" aria-expanded="true" aria-controls="dockBody" aria-label="Hide the beat and layer controls" title="Show or hide the beat and layer controls"><span class="chev"></span></button>
     <span class="rail-label">Controls</span>
   </div>
 </footer>
@@ -2120,7 +2120,7 @@ function menuContains(p, slack) {
   return Math.hypot(p.x - M.cx, p.y - M.cy) < M.R + slack + 20;
 }
 function closeMenu() { state.menu = null; }
-const menuIdle = M => (M.grid ? 9 : M.fresh ? 7 : 6);   // seconds without a pointer nearby before it closes
+const menuIdle = M => (M.grid ? 10 : M.fresh ? 10 : 12);   // seconds without a pointer nearby before it closes
 
 function chooseMenu(it) {
   const M = state.menu, s = M.s;
@@ -2157,14 +2157,22 @@ function updateMenu(pointers, dt) {
   const M = state.menu;
   if (!M) return;
   const t = nowS();
-  const HIT = Math.max(36, 24 * state.ui), DWELL = 0.8;
+  // radial targets shrink to their spacing so two neighbours can't both be "over"
+  const step = M.grid ? 0 : 2 * M.R * Math.sin(Math.PI / M.items.length);
+  const HIT = M.grid ? Math.max(36, 24 * state.ui) : Math.max(28, Math.min(52, step * 0.4));
+  const OUT = M.grid ? 10 : 6;                        // hover hysteresis, in stage pixels
+  const DWELL = 0.8;
   let chosen = null;
   for (const it of M.items) {
-    let over = false, pressed = false;
+    let over = false, overOut = false, pressed = false;
     for (const p of pointers) {
-      const hit = it.w ? Math.abs(p.x - it.x) < it.w / 2 - 2 && Math.abs(p.y - it.y) < it.h / 2 - 2 : Math.hypot(p.x - it.x, p.y - it.y) < HIT;
-      if (hit) { over = true; if (p.press) pressed = true; }
+      const d = it.w
+        ? Math.hypot(Math.max(0, Math.abs(p.x - it.x) - it.w / 2 + 2), Math.max(0, Math.abs(p.y - it.y) - it.h / 2 + 2))
+        : Math.hypot(p.x - it.x, p.y - it.y);
+      if (it.w ? d <= OUT : d < HIT + OUT) overOut = true;
+      if (it.w ? d === 0 : d < HIT) { over = true; if (p.press) pressed = true; }
     }
+    const hover = it.hover ? overOut : over;
     if (over && !it.hover && M.kind === 'instrument' && audio.ctx && t - M.opened > 0.3 && t - (M.heard || 0) > 0.14) {
       M.heard = t;
       const base = scaleDegree(SCALES[strScale(M.s)].parent, strRoot(M.s), INSTRUMENTS[it.id].oct, 0);
@@ -2173,9 +2181,12 @@ function updateMenu(pointers, dt) {
       else playNote(it.id, base, audio.ctx.currentTime, 0.35, dest);
     }
     // a finger that was already resting here when the ring opened must leave before it can hold-select
-    if (!M.primed) it.blocked = over; else if (!over) it.blocked = false;
-    it.hover = over;
-    it.dwell = over && !it.blocked && t - M.opened > 0.35 ? it.dwell + dt : 0;
+    if (!M.primed) it.blocked = hover; else if (!hover) it.blocked = false;
+    it.hover = hover;
+    // camera landmarks jitter: lose progress gradually instead of snapping the arc back to zero
+    it.dwell = hover && !it.blocked && t - M.opened > 0.35
+      ? Math.min(DWELL, it.dwell + dt)
+      : Math.max(0, it.dwell - dt * 2.5);
     if (pressed || it.dwell >= DWELL) chosen = chosen || it;
   }
   M.primed = true;
@@ -2337,7 +2348,7 @@ function processHands(dets, t) {
   const [a, b] = slots;
   // (a hand that has only just pinched a string, or started the air pad, still counts as free)
   const free = h => h && h.present && h.pinch && (h.intent === 'free' || h.intent === 'create' || h.intent === 'fx'
-    || (h.intent === 'grab' && t - h.pinchT < 0.6 && (!h.grab.s.pull || Math.abs(h.grab.s.pull.d) < 14)));
+    || (h.intent === 'grab' && t - h.pinchT < 1.2 && (!h.grab.s.pull || Math.abs(h.grab.s.pull.d) < 14)));
   if (free(a) && free(b) && !state.menu && !modalOpen()) {
     for (const h of [a, b]) {
       if (h.intent === 'grab') { h.grab.s.pull = null; bendString(h.grab.s, 0); }
@@ -2761,9 +2772,8 @@ function gatherPointers() {
   const P = [];
   for (const h of state.hands) {
     if (!h || !h.present || !h.lm) continue;
-    P.push({ x: h.lm[8].x, y: h.lm[8].y, press: h.press });
-    // the pinch pointer only counts while the fingers are closing, so an open hand points with one fingertip
-    if (h.pinch || h.press) P.push({ x: h.cursor.x, y: h.cursor.y, press: h.press });
+    // the amber ring is the visible pointer, so menus hit-test the same spot the user aims
+    P.push({ x: h.cursor.x, y: h.cursor.y, press: h.press });
   }
   const m = state.mouse;
   if (m.inside && m.x >= 0) P.push({ x: m.x, y: m.y, press: !!m.press });
