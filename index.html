@@ -49,6 +49,13 @@ button.sq { width: 40px; padding: 0; justify-content: center; font-size: 18px; }
 .layer .chip { border-radius: 10px 0 0 10px; }
 .layer .x { border-radius: 0 10px 10px 0; border-left: 0; width: 34px; padding: 0; justify-content: center; font-size: 18px; }
 
+/* touch-play controls: only on touch screens / the mobile layout */
+.touch-only, #touchBtn { display: none; }
+html.mobile .touch-only, html.coarse .touch-only, html.mobile #touchBtn, html.coarse #touchBtn { display: inline-flex; }
+#touchBtn { padding: 0; justify-content: center; }
+#touchBtn.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+#touchBtn svg { display: block; }
+
 #playBtn { min-width: 96px; justify-content: center; }
 #playBtn i { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
 #playBtn.on { background: var(--mint); border-color: var(--mint); color: var(--ink); }
@@ -138,11 +145,11 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
 :root { --bar-h: 52px; --dock-h: 60px; --rail-w: 58px; --side-w: min(320px, 44vw); }
 
 /* each bar is a fixed head plus a body that folds away */
-#top, #dock { padding: 0; gap: 0; align-items: stretch; }
+#top, #dock { padding: 0; gap: 0; align-items: stretch; flex-wrap: nowrap; }
 #top { flex-direction: column; }
 #dock { flex-direction: column; }
 
-.panel-head { display: flex; align-items: center; gap: 8px; min-height: var(--bar-h); padding: 4px 10px; flex: 0 0 auto; min-width: 0; }
+.panel-head { display: flex; align-items: center; gap: 8px; min-height: var(--bar-h); padding: 4px 10px; flex: 0 0 auto; min-width: 0; flex-wrap: wrap; }
 #top .panel-head { padding-top: calc(4px + env(safe-area-inset-top, 0px)); }
 #dock .panel-head { padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
 .panel-title { display: none; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
@@ -211,6 +218,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 .side #top .panel-head { padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
 .side #dock .panel-head { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
 .side .panel.collapsed .panel-head > :not(.panel-toggle):not(.rail-label) { display: none; }
+.side .panel.collapsed #touchBtn { display: none; }
 .side .panel.collapsed .rail-label { display: block; writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); margin: 4px 0; }
 .side .panel:not(.collapsed) .rail-label { display: none; }
 .side .panel:not(.collapsed) .panel-title { display: block; }
@@ -219,7 +227,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 .side .panel:not(.collapsed) .panel-head .spacer { flex: 1; }
 .side .panel-body { flex: 1 1 auto; min-height: 0; }
 .side .panel-inner { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 10px !important; padding: 4px 10px 12px !important; overflow-y: auto; }
-.side .panel:not(.collapsed) .panel-inner { max-height: none; }
+.side #top:not(.collapsed) .panel-inner, .side #dock:not(.collapsed) .panel-inner { max-height: none; }
 .side .panel.collapsed .panel-inner { overflow: hidden; }
 .side .panel-inner .row { flex-direction: column; align-items: stretch; gap: 8px; }
 .side .panel-inner .sep { display: none; }
@@ -251,6 +259,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <span class="panel-title">Controls</span>
     <button id="recBtn"><span class="dot"></span><span id="recLabel">Record</span><span id="recTime"></span></button>
     <button id="filmBtn" title="Hide the controls, count 3-2-1 and record">Film</button>
+    <button id="touchBtn" class="sq" aria-pressed="false" aria-label="Touch play" title="Touch play: one or more fingers pluck the strings. Hold two fingers close to edit, or spread them apart to make a string."><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="3.4" fill="currentColor"/><path d="M12 2.2v3M12 18.8v3M2.2 12h3M18.8 12h3M5.1 5.1l2.1 2.1M16.8 16.8l2.1 2.1M18.9 5.1l-2.1 2.1M7.2 16.8l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     <span class="spacer"></span>
     <button id="topToggle" class="panel-toggle" aria-expanded="true" aria-controls="topBody" aria-label="Hide the controls" title="Show or hide the controls"><span class="chev"></span></button>
     <span class="rail-label">Controls</span>
@@ -334,6 +343,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
     <div class="actions">
       <button id="startCam" class="primary">Start camera</button>
       <button id="startMouse">Play with the mouse instead</button>
+      <button id="startTouch" class="touch-only">Play with touch</button>
     </div>
     <div id="startStatus"></div>
     <p class="small" style="margin-top:10px">Use Chrome or Edge. The hand tracker loads from the internet the first time. Sit 40 to 80 cm from the camera with light on your hands.</p>
@@ -358,6 +368,12 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Menus:</b> point at a choice and hold still for a moment, or pinch it.</li>
       <li><b>Buttons:</b> put the amber ring on any button and do a quick pinch.</li>
       <li><b>Air pad:</b> pinch empty air with one hand and drag. Down darkens the whole mix, up thins it, sideways adds echo. Let go and it clears.</li>
+    </ul>
+    <h3>Touch screens</h3>
+    <ul>
+      <li><b>Touch play</b> (the finger icon in the top bar) makes one finger pluck strings, and several fingers play several strings at once. Tap it again to go back to dragging with one finger.</li>
+      <li><b>Make a string:</b> hold two fingers close together and spread them apart, then let go. You can also start them apart and pinch them together to make a string between their starting points.</li>
+      <li><b>Edit:</b> hold two close fingers still on a string’s badge and tap to change its instrument. Move them together to drag an end, bend a string, or work the air pad.</li>
     </ul>
     <h3>Building a track</h3>
     <ul>
@@ -857,9 +873,11 @@ const state = {
   particles: [],
   pops: [],                // floating note names
   ripples: [],
-  mode: 'idle',            // idle | camera | mouse | demo
+  mode: 'idle',            // idle | camera | mouse | touch | demo
   hands: [null, null],
   mouse: { x: -1, y: -1, px: -1, py: -1, down: false, inside: false, drag: null },
+  touches: new Map(),      // pointerId -> touch point, while touch play is on
+  touchEdit: null,         // two-finger create/edit gesture in progress
   safeTop: 70, safeBottom: 560, safeLeft: 0, safeRight: 1280,
   layout: 'desktop', side: false, ui: 1, pointerCoarse: false, shapeAuto: true,
   panels: { top: true, dock: true },
@@ -2267,13 +2285,109 @@ function updateHandHover() {
   for (const h of state.hands) if (h) setHover(h, h.present ? buttonAt(h.cursor) : null);
 }
 
+// ── touch play: one finger plays, two fingers create and edit ──
+function touchEditBegin() {
+  const [a, b] = [...state.touches.values()];
+  if (!a || !b) return;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const big = px => Math.max(px, 30 * state.ui);
+  const ep = nearestEndpoint(mid, big(48)), dot = nearestDot(mid, big(40)), body = nearestBody(mid, Math.max(24, 12 * state.ui));
+  state.touchEdit = { a, b, a0: { x: a.x, y: a.y }, b0: { x: b.x, y: b.y },
+    sep0: dist(a, b), mid0: mid, t0: nowS(), kind: null, anchor: null, from: null, ca: null, cb: null,
+    playing: dist(a, b) > 130 * state.ui,
+    target: ep ? { kind: 'drag', anchor: ep } : dot ? { kind: 'dot', anchor: dot } : body ? { kind: 'grab', anchor: body } : null };
+}
+function touchEditMove() {
+  const E = state.touchEdit;
+  if (!E || !state.touches.has(E.a.id) || !state.touches.has(E.b.id)) return;
+  const sep = dist(E.a, E.b), mid = { x: (E.a.x + E.b.x) / 2, y: (E.a.y + E.b.y) / 2 };
+  // starting on a string means editing it; starting in open air means a two-finger pinch creates a string
+  const gap = E.target ? 120 : E.playing ? 90 : 45;
+  if (!E.kind && Math.abs(sep - E.sep0) > gap * state.ui) {
+    E.kind = 'create';
+    if (sep >= E.sep0) { E.ca = E.a; E.cb = E.b; }
+    else { E.ca = E.a0; E.cb = E.b0; }
+  }
+  if (E.kind === 'create') {
+    state.preview = { a: { x: E.ca.x, y: E.ca.y }, b: { x: E.cb.x, y: E.cb.y } };
+    return;
+  }
+  if (!E.playing && !E.kind && dist(mid, E.mid0) > 28 * state.ui) {
+    if (E.target) { E.kind = E.target.kind; E.anchor = E.target.anchor; }
+    else { E.kind = 'fx'; E.from = { ...E.mid0 }; }
+  }
+  if (E.kind === 'drag') { E.anchor.s[E.anchor.end] = { ...mid }; E.anchor.s.touched = nowS(); }
+  else if (E.kind === 'grab') pullString(E.anchor, mid);
+  else if (E.kind === 'fx') moveFx(E.from, mid);
+}
+function touchEditClick(p) {
+  if (modalOpen()) return;
+  if (state.menu) { if (menuContains(p, 60)) return; closeMenu(); }
+  const dot = nearestDot(p, Math.max(34, 16 * state.ui));
+  if (dot && state.strings.includes(dot)) { openMenu(dot, 'hub'); return; }
+  state.ripples.push({ x: p.x, y: p.y, t: nowS() });
+  const b = buttonAt(p);
+  if (b) { state.counts.clicks++; b.click(); }
+}
+function touchEditEnd(leavingId) {
+  const E = state.touchEdit;
+  if (!E || (leavingId != null && leavingId !== E.a.id && leavingId !== E.b.id)) return;
+  state.touchEdit = null;
+  const a = state.touches.get(E.a.id) || E.a, b = state.touches.get(E.b.id) || E.b;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  if (E.kind === 'create') {
+    state.preview = null;
+    if (dist(E.ca, E.cb) >= 90) addString({ x: E.ca.x, y: E.ca.y }, { x: E.cb.x, y: E.cb.y });
+    else toast('Spread your fingers further apart to make a string.');
+  } else if (E.kind === 'drag') {
+    orient(E.anchor.s);
+    if (strLen(E.anchor.s) < 60) removeString(E.anchor.s);
+  } else if (E.kind === 'grab') releasePull(E.anchor);
+  else if (E.kind === 'fx') endFx();
+  else if (!E.playing && dist(mid, E.mid0) < 40 * state.ui && nowS() - E.t0 < 1.2) touchEditClick(mid);
+}
+function setTouchPlay(on) {
+  const enabled = !!on;
+  if (!enabled) {
+    state.touches.clear(); state.touchEdit = null; state.preview = null;
+    endFx(); forgetPointer('touch');
+  }
+  state.mode = enabled ? 'touch' : 'mouse';
+  refreshUI();
+  toast(enabled
+    ? 'Touch play: sweep one or more fingers to play. Hold two close to edit, or spread them apart to make a string.'
+    : 'Touch play off: drag one finger to make and edit strings.', 4200);
+}
+
 // ── mouse / touch: the same instrument without a camera ──
 function initPointer() {
   const cv = $('#stage'), m = state.mouse;
   const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; };
+  const touchDown = (e, p) => {
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    const t = nowS();
+    state.touches.set(e.pointerId, { id: e.pointerId, x: p.x, y: p.y, t0: t, press: true });
+    if (state.menu && !menuContains(p, 60)) closeMenu();
+    if (state.touches.size === 2) touchEditBegin();
+  };
+  const touchMove = (e, p) => {
+    const pt = state.touches.get(e.pointerId);
+    if (!pt) return;
+    pt.x = p.x; pt.y = p.y;
+    touchEditMove();
+  };
+  const touchUp = (e, p) => {
+    const pt = state.touches.get(e.pointerId);
+    if (!pt) return;
+    pt.x = p.x; pt.y = p.y;
+    state.touches.delete(e.pointerId);
+    forgetPointer('touch' + e.pointerId);
+    touchEditEnd(e.pointerId);
+  };
   cv.addEventListener('pointerdown', e => {
     initAudio();
     const p = pos(e);
+    if (state.mode === 'touch' && e.pointerType !== 'mouse') { touchDown(e, p); return; }
     m.x = m.px = p.x; m.y = m.py = p.y; m.inside = true; m.down = true; m.press = true;
     forgetPointer('mouse');
     try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2293,6 +2407,7 @@ function initPointer() {
   });
   cv.addEventListener('pointermove', e => {
     const p = pos(e), t = nowS();
+    if (state.mode === 'touch' && e.pointerType !== 'mouse') { touchMove(e, p); return; }
     m.inside = true;
     if (m.down && m.drag) {
       if (m.drag.type === 'new' && dist(p, m.drag.from) > 12) state.preview = { a: m.drag.from, b: p };
@@ -2303,6 +2418,7 @@ function initPointer() {
     m.x = p.x; m.y = p.y; m.t = t;
   });
   const up = e => {
+    if (state.mode === 'touch' && e.pointerType !== 'mouse') { touchUp(e, pos(e)); return; }
     if (!m.down) return;
     m.down = false;
     const p = pos(e), d = m.drag;
@@ -2334,6 +2450,7 @@ function gatherPointers() {
   }
   const m = state.mouse;
   if (m.inside && m.x >= 0) P.push({ x: m.x, y: m.y, press: !!m.press });
+  if (state.mode === 'touch') for (const pt of state.touches.values()) P.push({ x: pt.x, y: pt.y, press: !!pt.press });
   return P;
 }
 
@@ -2709,6 +2826,18 @@ function drawHands(t) {
   }
 }
 
+function drawTouches(t) {
+  if (state.mode !== 'touch') return;
+  const r = Math.max(12, 9 * state.ui);
+  for (const pt of state.touches.values()) {
+    g.strokeStyle = state.touchEdit && (pt === state.touchEdit.a || pt === state.touchEdit.b) ? '#ffc24a' : 'rgba(251,246,233,0.85)';
+    g.lineWidth = 2;
+    g.beginPath(); g.arc(pt.x, pt.y, r, 0, 7); g.stroke();
+    g.fillStyle = 'rgba(255,194,74,0.4)';
+    g.beginPath(); g.arc(pt.x, pt.y, 4 * Math.max(1, state.ui), 0, 7); g.fill();
+  }
+}
+
 function drawDebug() {
   if (!state.settings.debug) return;
   const lines = [`draw ${state.fps} fps · tracker ${cam.trackFps} fps ${cam.delegate}`];
@@ -2731,6 +2860,7 @@ function render(t, dt) {
   drawPops(t);
   drawMenu(t);
   drawHands(t);
+  drawTouches(t);
   drawDebug();
 }
 
@@ -3241,6 +3371,11 @@ function refreshUI() {
   $('#clearBtn').textContent = state.cleared ? 'Undo clear' : 'Clear';
   $('#shapeBtn').textContent = state.shape === 'vertical' ? '9:16' : '16:9';
   $('#shapeBtn').disabled = rec.on;
+  const touchBtn = $('#touchBtn');
+  if (touchBtn) {
+    touchBtn.classList.toggle('on', state.mode === 'touch');
+    touchBtn.setAttribute('aria-pressed', state.mode === 'touch' ? 'true' : 'false');
+  }
   $('#filmBtn').disabled = rec.on || film.counting;
   $('#followBtn').classList.toggle('on', transport.follow);
   $('#undoLayer').disabled = !transport.layers.length && !transport.rec;
@@ -3276,6 +3411,17 @@ function currentHint() {
   const R = transport.rec, M = state.menu, hands = state.mode !== 'mouse';
   if (R && R.state === 'countin') return 'Layer starts on the next bar. Listen for the count.';
   if (R && R.state === 'rec') return 'Recording your layer: play the strings now.';
+  if (state.mode === 'touch') {
+    if (M) {
+      if (M.kind === 'instrument') return 'Hold still on an instrument, or tap it.';
+      return M.kind === 'tone' ? 'Now hold still on a tone, or tap it.' : 'Hold still on a choice, or tap it.';
+    }
+    if (state.preview) return 'Release to place the string.';
+    if (!state.strings.length) return 'Hold two fingers close together, then spread them apart to make a string.';
+    if (state.counts.plucks < 3) return 'Sweep one or more fingers across a string to play it.';
+    if (state.counts.plucks < 14) return 'Hold two fingers close on a string’s dot to change it, or spread two fingers to make a string.';
+    return '';
+  }
   if (M) {
     if (M.kind === 'instrument') return hands ? 'Point at an instrument and hold still, or pinch it.' : 'Click an instrument.';
     if (M.kind === 'tone') return hands ? 'Now point at a tone for this string.' : 'Now click a tone for this string.';
@@ -3391,6 +3537,7 @@ function layoutStage() {
   const r = cv.getBoundingClientRect();
   state.ui = r.width ? W / r.width : 1;
   state.pointerCoarse = matchMedia('(pointer: coarse)').matches;
+  document.documentElement.classList.toggle('coarse', state.pointerCoarse);
   const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
   const clean = document.body.classList.contains('clean');
   // the canvas can be larger than the viewport (cover fit); keep menus inside the visible part
@@ -3450,6 +3597,7 @@ function initUI() {
   on('clearBtn', clearStrings);
   on('shapeBtn', () => setShape(state.shape === 'vertical' ? 'landscape' : 'vertical'));
   on('filmBtn', startFilm);
+  on('touchBtn', () => setTouchPlay(state.mode !== 'touch'));
   on('filmStop', stopFilm);
   on('cleanExit', leaveClean);
   on('followBtn', () => {
@@ -3555,6 +3703,7 @@ function initUI() {
     }
   });
   $('#startMouse').addEventListener('click', () => { initAudio(); state.mode = 'mouse'; closeModal('startModal'); });
+  $('#startTouch').addEventListener('click', () => { initAudio(); closeModal('startModal'); setTouchPlay(true); });
 
   addEventListener('resize', scheduleMode);
   addEventListener('orientationchange', () => setTimeout(scheduleMode, 250));
@@ -3602,11 +3751,17 @@ function frame() {
   try {
     const dets = state.mode === 'camera' ? readHands(t) : state.mode === 'demo' ? demoHands(t) : null;
     if (dets) processHands(dets, t);
+    if (state.mode === 'touch' && !modalOpen()) {
+      const E = state.touchEdit;
+      const busy = E && (!E.playing || E.kind === 'create') ? [E.a, E.b] : [];
+      for (const pt of state.touches.values()) if (!busy.includes(pt)) sweep('touch' + pt.id, pt, t);
+    }
     const mo = state.mouse;      // the mouse plays like a fingertip: checked every frame, so resting on a string counts
-    if (mo.inside && !mo.down && mo.x >= 0 && state.mode !== 'idle' && !modalOpen()) sweep('mouse', mo, t);
+    if (state.mode !== 'touch' && mo.inside && !mo.down && mo.x >= 0 && state.mode !== 'idle' && !modalOpen()) sweep('mouse', mo, t);
     updateHolds(t);
     updateMenu(gatherPointers(), dt);
     for (const h of state.hands) if (h) h.press = false;
+    for (const pt of state.touches.values()) pt.press = false;
     state.mouse.press = false;
     updateHandHover();
     render(t, dt);
@@ -3772,7 +3927,8 @@ function boot() {
     openLanding();
   }
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
-    demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount };
+    demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount,
+    setTouchPlay, touchInfo: () => ({ touches: state.touches.size, edit: state.touchEdit && state.touchEdit.kind }) };
 }
 boot();
 
