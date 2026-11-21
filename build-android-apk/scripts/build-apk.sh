@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Build an installable Android debug APK from index.html using Capacitor.
-# Usage: npm run apk:build   (run npm run apk:setup once if the SDK platform is missing)
+# Build an installable Android debug APK from the app's root index.html using Capacitor.
+# Usage: cd build-android-apk && npm run apk:build
+#        (run npm run apk:setup once if the SDK platform is missing)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,9 +25,10 @@ if [[ ! -d "$SDK/platforms/android-35" && ! -d "$SDK/platforms/android-34" ]]; t
 fi
 
 # Capacitor serves a plain web folder, so stage the single-page app there.
+[[ -f ../index.html ]] || { echo "Missing ../index.html — run this from build-android-apk/." >&2; exit 1; }
 rm -rf www
 mkdir -p www dist
-cp index.html www/index.html
+cp ../index.html www/index.html
 
 if [[ ! -d node_modules ]]; then
   npm install --no-audit --no-fund
