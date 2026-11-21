@@ -128,6 +128,12 @@ button.tile span { font-size: 12.5px; font-weight: 500; color: var(--mute); line
 .mrow .grow { flex: 1; min-width: 0; }
 .mrow small { display: block; color: var(--mute); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mrow .val { min-width: 48px; }
+.mrow input[type=range] { flex: 1 1 100%; width: auto; min-width: 80px; }
+.dock-tabs { display: flex; align-items: center; gap: 6px; }
+.dock-tabs button { font-size: 13px; }
+.dock-tabs button.on { background: var(--amber); border-color: var(--amber); color: var(--ink); }
+.dock-view.hide { display: none !important; }
+.mix-note { margin: 4px 0; color: var(--mute); font-size: 12.5px; line-height: 1.4; }
 .saverow { display: flex; gap: 8px; margin: 14px 0 10px; flex-wrap: wrap; }
 input[type=text] { flex: 1; min-width: 180px; height: 46px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--text); font: inherit; }
 input[type=text]:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
@@ -289,29 +295,41 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
 
 <footer id="dock" class="bar panel open">
   <div id="dockBody" class="panel-body"><div class="panel-inner">
-    <div class="row">
-      <span class="lab">Beat</span><div id="beatChips" class="chips"></div>
-      <div class="group"><span class="lab">Tempo</span><button id="bpmDown" class="sq" aria-label="Slower">−</button><span id="bpmVal" class="val"></span><button id="bpmUp" class="sq" aria-label="Faster">+</button></div>
-      <button id="followBtn" class="chip" title="Strings retune to the chord the beat is playing, so everything fits">Follow chords</button><span id="chordNow" class="val"></span>
-      <div id="leds" aria-hidden="true"></div>
+    <div id="beatPanel" class="dock-view">
+      <div class="row">
+        <button id="playBtn"><i></i><span id="playLabel">Play</span></button>
+        <button id="layerBtn"><span class="dot"></span><span id="layerLabel">Record a layer</span></button>
+      </div>
+      <div class="row">
+        <span class="lab">Beat</span><div id="beatChips" class="chips"></div>
+        <div class="group"><span class="lab">Tempo</span><button id="bpmDown" class="sq" aria-label="Slower">−</button><span id="bpmVal" class="val"></span><button id="bpmUp" class="sq" aria-label="Faster">+</button></div>
+        <button id="followBtn" class="chip" title="Strings retune to the chord the beat is playing, so everything fits">Follow chords</button><span id="chordNow" class="val"></span>
+        <div id="leds" aria-hidden="true"></div>
+      </div>
+      <div class="row">
+        <span class="lab">Beat parts</span><div id="partChips" class="chips"></div>
+        <span class="sep"></span>
+        <span class="lab">Your layers</span>
+        <div class="group"><button id="barsDown" class="sq" aria-label="Shorter layer">‹</button><span id="barsVal" class="val mid"></span><button id="barsUp" class="sq" aria-label="Longer layer">›</button></div>
+        <button id="undoLayer" title="Remove the layer you added last">Undo</button>
+        <div id="layerChips" class="chips"></div>
+      </div>
     </div>
-    <div class="row">
-      <span class="lab">Beat parts</span><div id="partChips" class="chips"></div>
-      <span class="sep"></span>
-      <span class="lab">Your layers</span>
-      <div class="group"><button id="barsDown" class="sq" aria-label="Shorter layer">‹</button><span id="barsVal" class="val mid"></span><button id="barsUp" class="sq" aria-label="Longer layer">›</button></div>
-      <button id="undoLayer" title="Remove the layer you added last">Undo</button>
-      <div id="layerChips" class="chips"></div>
+    <div id="mixerPanel" class="dock-view hide">
+      <div id="mixSliders"></div>
+      <p class="mix-note">Stems are each beat part and each layer as its own WAV, plus a full mix, at the current tempo and key. Live playing is not included.</p>
+      <div class="row"><button id="stemsBtn" class="primary">Export stems (.zip)</button><span id="stemsNote" class="small status"></span></div>
     </div>
   </div></div>
   <div class="panel-head">
-    <span class="panel-title">Mixer</span>
-    <button id="playBtn"><i></i><span id="playLabel">Play</span></button>
-    <button id="layerBtn"><span class="dot"></span><span id="layerLabel">Record a layer</span></button>
-    <button id="mixBtn" title="Volumes, and export of separate audio files">Mixer</button>
+    <span class="panel-title">Controls</span>
+    <div class="dock-tabs">
+      <button id="beatTab" class="on" aria-selected="true">Beat &amp; record</button>
+      <button id="mixerTab" aria-selected="false">Mixer</button>
+    </div>
     <span class="spacer"></span>
     <button id="dockToggle" class="panel-toggle" aria-expanded="true" aria-controls="dockBody" aria-label="Hide the beat and layer controls" title="Show or hide the beat and layer controls"><span class="chev"></span></button>
-    <span class="rail-label">Mixer</span>
+    <span class="rail-label">Controls</span>
   </div>
 </footer>
 
@@ -393,7 +411,7 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <li><b>Beat:</b> pick a style, then switch its parts on one at a time: kick, snare, hats, bass, chords. Bass and chords follow the key and tone at the top.</li>
       <li><b>Follow chords:</b> while the beat plays, every string retunes to the chord of the current bar, so whatever you play fits.</li>
       <li><b>Your layers:</b> press <b>Record a layer</b>, wait for the count, play a phrase. It loops, and you play the next layer on top. Tap a layer to mute it, × to remove it, <b>Undo</b> to remove the last one.</li>
-      <li><b>Mixer:</b> volumes for your playing, the beat and each layer, and <b>Export stems</b> for separate audio files.</li>
+      <li><b>Mixer:</b> the bottom bar has two panels: <b>Beat &amp; record</b> and <b>Mixer</b>. The mixer has volume sliders for your playing, the beat and each layer, plus <b>Export stems</b> for separate audio files.</li>
     </ul>
     <h3>Recording and filming</h3>
     <ul>
@@ -446,20 +464,6 @@ html.mobile .layout-choice { grid-template-columns: 1fr; }
       <button id="setupFileIn">Load from a file</button>
       <input id="setupFile" type="file" accept=".json,application/json" class="hide">
       <button data-close="setupsModal">Close</button>
-    </div>
-  </div>
-</div>
-
-<div id="mixModal" class="modal">
-  <div class="card wide">
-    <h2>Mixer</h2>
-    <div id="mixRows"></div>
-    <h3>Separate audio files</h3>
-    <p class="small">Stems are each beat part and each layer as its own WAV, plus a full mix, at the current tempo and key. They all start on the same downbeat, ready for an editor. Live playing is not included.</p>
-    <p id="stemsNote" class="small status"></p>
-    <div class="actions">
-      <button id="stemsBtn" class="primary">Export stems (.zip)</button>
-      <button data-close="mixModal">Close</button>
     </div>
   </div>
 </div>
@@ -895,6 +899,7 @@ const state = {
   safeTop: 70, safeBottom: 560, safeLeft: 0, safeRight: 1280,
   layout: 'desktop', side: false, ui: 1, pointerCoarse: false, shapeAuto: true,
   panels: { top: true, dock: true },
+  dockView: 'beat',
   fps: 0,
   counts: { plucks: 0, created: 0, clicks: 0 },
   mix: { live: 0.85, beat: 0.8 },
@@ -3520,29 +3525,38 @@ function refreshUI() {
   $('#undoLayer').disabled = !transport.layers.length && !transport.rec;
   $('#filmBar').classList.toggle('filming', film.on || film.counting);
   if (!rec.on) $('#filmTime').textContent = film.counting ? 'Get ready' : '0:00';
-  $('#mixRows').innerHTML = mixRowsHTML();
+  renderMixSliders();
   const sw = $('#layoutSwitch');
   if (sw) sw.textContent = layoutMode === 'mobile' ? 'Switch to desktop layout' : 'Switch to mobile layout';
 }
 
-function mixRowsHTML() {
+function mixSlidersHTML() {
   const pct = v => Math.round(v * 100) + '%';
   const row = (label, sub, key, v, extra = '') => `<div class="mrow"><span class="grow"><b>${label}</b><small>${sub}</small></span>${extra}`
-    + `<button class="sq" data-vol="${key}" data-d="-1" aria-label="${label} quieter">−</button><span class="val">${pct(v)}</span><button class="sq" data-vol="${key}" data-d="1" aria-label="${label} louder">+</button></div>`;
+    + `<input type="range" min="0" max="1.5" step="0.01" value="${v}" data-vol="${key}" aria-label="${label} volume"><span class="val">${pct(v)}</span></div>`;
   return row('Your playing', 'What you play live on the strings', 'live', state.mix.live)
     + row('Beat', BEATS[transport.beat].name, 'beat', state.mix.beat)
     + transport.layers.map((L, i) => row(`Layer ${i + 1}`, `${L.name} · ${L.len / 16} bar${L.len > 16 ? 's' : ''}`, 'L' + L.id, L.vol,
       `<button data-layer="${L.id}">${L.muted ? 'Unmute' : 'Mute'}</button><button data-del="${L.id}">Remove</button>`)).join('');
 }
-function nudgeVolume(key, d) {
-  const step = v => Math.round(clamp(v + d * 0.1, 0, 1.5) * 10) / 10;
+function renderMixSliders() {
+  const el = $('#mixSliders');
+  if (el) el.innerHTML = mixSlidersHTML();
+}
+function setVolume(key, v, refresh = true) {
+  const val = Math.round(clamp(v, 0, 1.5) * 100) / 100;
   if (key === 'live' || key === 'beat') {
-    state.mix[key] = step(state.mix[key]);
+    state.mix[key] = val;
     if (audio.ctx) { audio.music.gain.value = state.mix.live; audio.beat.gain.value = state.mix.beat; }
   } else {
     const L = transport.layers.find(l => 'L' + l.id === key);
-    if (L) { L.vol = step(L.vol); if (L._g) L._g.gain.value = L.vol; }
+    if (L) { L.vol = val; if (L._g) L._g.gain.value = val; }
   }
+  if (refresh) refreshUI();
+}
+function nudgeVolume(key, d) {
+  const cur = key === 'live' || key === 'beat' ? state.mix[key] : (transport.layers.find(l => 'L' + l.id === key) || { vol: 0 }).vol;
+  setVolume(key, cur + d * 0.1);
 }
 
 function currentHint() {
@@ -3584,7 +3598,7 @@ function detectLayout() {
 function defaultPanels() { return layoutMode === 'mobile' ? { top: false, dock: false } : { top: true, dock: true }; }
 function loadUI() { try { return JSON.parse(localStorage.getItem(UI_KEY) || 'null'); } catch (_) { return null; } }
 function saveUI() {
-  try { localStorage.setItem(UI_KEY, JSON.stringify({ layout: layoutMode, panels: state.panels })); } catch (_) {}
+  try { localStorage.setItem(UI_KEY, JSON.stringify({ layout: layoutMode, panels: state.panels, dockView: state.dockView })); } catch (_) {}
 }
 function panelOpen(name) { return !$('#' + name).classList.contains('collapsed'); }
 function setPanel(name, open, opts = {}) {
@@ -3603,6 +3617,18 @@ function setPanel(name, open, opts = {}) {
     btn.setAttribute('aria-label', (open ? 'Hide ' : 'Show ') + (name === 'top' ? 'the controls' : 'the beat and layer controls'));
   }
   if (!opts.silent) { state.panels[name] = open; saveUI(); layoutStage(); }
+}
+function setDockView(view, opts = {}) {
+  state.dockView = view === 'mixer' ? 'mixer' : 'beat';
+  $('#beatPanel').classList.toggle('hide', state.dockView !== 'beat');
+  $('#mixerPanel').classList.toggle('hide', state.dockView !== 'mixer');
+  for (const [id, name] of [['beatTab', 'beat'], ['mixerTab', 'mixer']]) {
+    const b = $('#' + id);
+    b.classList.toggle('on', state.dockView === name);
+    b.setAttribute('aria-selected', state.dockView === name ? 'true' : 'false');
+  }
+  if (!opts.silent) { setPanel('dock', true); saveUI(); }
+  if (state.dockView === 'mixer') renderMixSliders();
 }
 function updateLayoutMode() {
   const root = document.documentElement;
@@ -3744,7 +3770,8 @@ function initUI() {
     if (transport.follow && !transport.playing) toast('Follow chords takes effect while the beat is playing.');
   });
   on('undoLayer', undoLayer);
-  on('mixBtn', () => { $('#stemsNote').textContent = ''; openModal('mixModal'); });
+  on('beatTab', () => setDockView('beat'));
+  on('mixerTab', () => { $('#stemsNote').textContent = ''; setDockView('mixer'); });
   on('setupsBtn', () => { refreshSetups(); openModal('setupsModal'); });
   on('setupSave', () => saveSetup($('#setupName').value));
   on('setupFileOut', setupToFile);
@@ -3762,11 +3789,17 @@ function initUI() {
     if (ld && list[+ld.dataset.load]) { initAudio(); if (applySetup(list[+ld.dataset.load])) { closeModal('setupsModal'); toast(`Loaded “${list[+ld.dataset.load].name}”.`); } }
     if (dr && list[+dr.dataset.drop]) { list.splice(+dr.dataset.drop, 1); storeSetups(list); refreshSetups(); }
   });
-  $('#mixRows').addEventListener('click', e => {
-    const v = e.target.closest('[data-vol]'), m = e.target.closest('[data-layer]'), d = e.target.closest('[data-del]');
-    if (v) nudgeVolume(v.dataset.vol, +v.dataset.d);
-    else if (d) { removeLayer(+d.dataset.del); return; }
-    else if (m) { const L = transport.layers.find(l => l.id === +m.dataset.layer); if (L) L.muted = !L.muted; }
+  $('#mixSliders').addEventListener('input', e => {
+    const r = e.target.closest('input[data-vol]');
+    if (!r) return;
+    setVolume(r.dataset.vol, +r.value, false);
+    const out = r.parentElement.querySelector('.val');
+    if (out) out.textContent = Math.round(+r.value * 100) + '%';
+  });
+  $('#mixSliders').addEventListener('click', e => {
+    const m = e.target.closest('[data-layer]'), d = e.target.closest('[data-del]');
+    if (d) { removeLayer(+d.dataset.del); return; }
+    if (m) { const L = transport.layers.find(l => l.id === +m.dataset.layer); if (L) L.muted = !L.muted; }
     refreshUI();
   });
   $('#stemsBtn').addEventListener('click', async () => {
@@ -3878,6 +3911,7 @@ function initUI() {
     ? { top: !!saved.panels.top, dock: !!saved.panels.dock }
     : defaultPanels();
   applyLayout(layoutMode, { resetPanels: false });
+  setDockView(saved && saved.dockView === 'mixer' ? 'mixer' : 'beat', { silent: true });
 }
 
 // ── main loop ──
@@ -4067,7 +4101,7 @@ function boot() {
   }
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
     demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount,
-    setTouchPlay, touchInfo: () => ({ touches: state.touches.size, hold: !!(state.touchEdit && state.touchEdit.hold), mode: state.touchEdit && state.touchEdit.mode, edit: state.touchEdit && state.touchEdit.kind }),
+    setTouchPlay, setDockView, touchInfo: () => ({ touches: state.touches.size, hold: !!(state.touchEdit && state.touchEdit.hold), mode: state.touchEdit && state.touchEdit.mode, edit: state.touchEdit && state.touchEdit.kind }),
     noteAt, fretlessInfo, zoneInfo, moveFx, endFx };
 }
 boot();

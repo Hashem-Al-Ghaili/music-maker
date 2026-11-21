@@ -42,6 +42,7 @@ The landing screen picks a layout from the screen: phones and tablets get **Mobi
 - **Desktop** – full-width control bars, mouse and keyboard shortcuts, 16:9 stage.
 - **Mobile portrait** – controls fold into slim top and bottom handles. Tap a handle's chevron to open it; opening one closes the other so the stage stays usable. Touch targets, canvas labels and menus scale up, and the camera picture fills the screen.
 - **Mobile landscape** – the two bars become left and right rails that span the full screen height. Tap a rail's chevron to slide it out; its controls fill the remaining height and scroll there, while the stage keeps the middle.
+- The bottom bar has two choosable panels: **Beat & record** and **Mixer** (with volume sliders), so no separate mixer window opens.
 
 Append `#mobile`, `#desktop` or `#demo` to the URL to open a layout directly. `#demo` forces the desktop layout and runs the scripted hands without a camera.
 
