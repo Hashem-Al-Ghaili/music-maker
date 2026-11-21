@@ -9,7 +9,8 @@
 - experimental fretless/TET based tuning.
 
 
-**Originial created by: Hashem Al-Ghaili**
+**Created by: Hasem Al-Ghaili**  
+forked & extended by Nemanja Bocokic / ccne4mocc
 
 Stretch strings in the air, give each one an instrument, and play them with your fingers.
 A single-page, camera-tracked instrument that runs entirely in the browser.
