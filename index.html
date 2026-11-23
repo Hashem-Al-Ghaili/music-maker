@@ -12,11 +12,13 @@
   --font: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #000; color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
+html, body { margin: 0; height: 100%; height: 100dvh; background: #000; color: var(--text); font-family: var(--font); font-size: 14px; overflow: hidden; }
 #cam { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
 #stageWrap { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
 #stage { display: block; touch-action: none; cursor: crosshair; }
 
+#controlsPanel { display: contents; }
+#mobBar { display: none; }
 .bar { position: fixed; left: 0; right: 0; z-index: 5; background: var(--panel); display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
 #top { top: 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 #dock { bottom: 0; border-top: 1px solid var(--line); flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px 12px; }
@@ -130,12 +132,35 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
 #count.show { display: grid; animation: countpop 0.95s ease-out both; }
 @keyframes countpop { 0% { transform: scale(1.5); opacity: 0; } 15% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 1400px) { .brand { display: none; } }
+@media (max-width: 768px) {
+  #mobBar { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; z-index: 15; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+  #mobBar button { pointer-events: auto; min-height: 40px; padding: 0 12px; font-size: 13px; border-radius: 999px; background: rgba(11, 13, 17, 0.84); backdrop-filter: blur(8px); }
+  #mobControlsBtn.on { border-color: var(--amber); color: var(--amber); }
+  #mobPlayBtn { min-width: 72px; justify-content: center; }
+  #mobPlayBtn i { width: 0; height: 0; border-left: 8px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  #mobPlayBtn.on { background: var(--mint); border-color: var(--mint); color: var(--ink); }
+  #mobPlayBtn.on i { width: 8px; height: 8px; border: 0; background: currentColor; }
+  #mobRecBtn.recording { background: var(--red); border-color: var(--red); color: #fff; }
+  #mobRecBtn.recording .dot { background: #fff; border-radius: 2px; animation: blink 0.8s steps(2) infinite; }
+  body:not(.mob-open) #controlsPanel { display: none; }
+  body.mob-open #controlsPanel { position: fixed; top: calc(max(10px, env(safe-area-inset-top)) + 48px); left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 14; background: rgba(11, 13, 17, 0.94); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 16px; padding: 12px;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
+  body.mob-open #top, body.mob-open #dock { position: static; background: transparent; border: 0; padding: 0; }
+  body.mob-open #dock { border-top: 1px solid var(--line); padding-top: 12px; }
+  body.mob-open #hint { display: none; }
+  body.clean #controlsPanel, body.clean #mobBar { display: none; }
+  .card { padding: 18px 16px; max-height: 88dvh; }
+  .card h1 { font-size: 24px; }
+  .set { grid-template-columns: 1fr; gap: 8px; }
+}
 </style>
 </head>
 <body>
 <video id="cam" playsinline muted></video>
 <div id="stageWrap"><canvas id="stage" width="1280" height="720"></canvas></div>
 
+<div id="controlsPanel">
 <header id="top" class="bar">
   <div class="brand">String <b>Mirror</b></div>
   <div class="group"><span class="lab">Key</span><button id="keyDown" class="sq" aria-label="Key down">‹</button><span id="keyVal" class="val"></span><button id="keyUp" class="sq" aria-label="Key up">›</button></div>
@@ -150,12 +175,6 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
   <button id="helpBtn">Help</button>
   <button id="setBtn">Settings</button>
 </header>
-<div id="filmBar"><span class="dot"></span><span id="filmTime">0:00</span><button id="filmStop">Stop</button><button id="cleanExit">Show controls</button></div>
-<div id="count" aria-hidden="true"></div>
-
-<div id="hint"></div>
-<div id="toast" role="status"></div>
-
 <footer id="dock" class="bar">
   <div class="row">
     <button id="playBtn"><i></i><span id="playLabel">Play</span></button>
@@ -175,6 +194,18 @@ body.clean #top, body.clean #dock, body.clean #hint { display: none; }
     <div id="layerChips" class="chips"></div>
   </div>
 </footer>
+</div>
+<div id="filmBar"><span class="dot"></span><span id="filmTime">0:00</span><button id="filmStop">Stop</button><button id="cleanExit">Show controls</button></div>
+<div id="count" aria-hidden="true"></div>
+<div id="hint"></div>
+<div id="toast" role="status"></div>
+<div id="mobBar" aria-label="Mobile quick controls">
+  <button id="mobControlsBtn" aria-expanded="false">Controls</button>
+  <span class="spacer"></span>
+  <button id="mobPlayBtn"><i></i><span id="mobPlayLabel">Play</span></button>
+  <button id="mobRecBtn"><span class="dot"></span><span id="mobRecLabel">Record</span></button>
+  <button id="mobClearBtn">Clear</button>
+</div>
 
 <div id="startModal" class="modal open">
   <div class="card">
@@ -708,6 +739,8 @@ const state = {
   particles: [],
   pops: [],                // floating note names
   ripples: [],
+  ghosts: [],              // living loop ghost-pluck rings
+  ghostQueue: [],          // scheduled visual ghost-plucks synced to audio clock
   mode: 'idle',            // idle | camera | mouse | demo
   hands: [null, null],
   mouse: { x: -1, y: -1, px: -1, py: -1, down: false, inside: false, drag: null },
@@ -949,6 +982,20 @@ function oscAt(type, freq, t, dur) {
   return o;
 }
 
+function panOut(bus, pan) {
+  const ctx = (bus && bus.context) || audio.ctx;
+  if (!ctx || pan == null || !Number.isFinite(pan) || Math.abs(pan) < 0.01 || typeof ctx.createStereoPanner !== 'function') return bus;
+  const q = Math.round(clamp(pan, -0.75, 0.75) * 20) / 20;
+  const pool = bus._panners || (bus._panners = {});
+  if (!pool[q]) {
+    const p = ctx.createStereoPanner();
+    p.pan.value = q;
+    p.connect(bus);
+    pool[q] = p;
+  }
+  return pool[q];
+}
+
 // A pitched note on any melodic instrument.
 // o.held keeps a sustaining instrument sounding until releaseVoice; o.holdSec sets a fixed length.
 // Returns the voice, so it can be bent or released later.
@@ -960,8 +1007,8 @@ function playNote(id, midi, t, vel, dest, len, o) {
   if (id === 'epiano') id = 'keys';
   const bus = instBus(id, dest);
   const held = !!(o && o.held);
-  let out = bus, gate = null;
-  if (held) { gate = ctx.createGain(); gate.connect(bus); out = gate; }
+  let out = panOut(bus, o && o.pan), gate = null;
+  if (held) { gate = ctx.createGain(); gate.connect(out); out = gate; }
   const hs = held ? 45 : o && o.holdSec;
   const H = base => (hs != null ? Math.max(hs, 0.08) : base * (len || 1));
   const srcs = VC = [];
@@ -1182,12 +1229,12 @@ function buildVoice(id, midi, t, vel, out, len, H) {
   }
 }
 
-function playDrum(name, t, vel, dest) {
+function playDrum(name, t, vel, dest, pan) {
   const ctx = audio.ctx;
   if (!ctx) return;
   t = Math.max(t, ctx.currentTime);
   vel = clamp(vel, 0.05, 1);
-  const out = instBus('drums', dest);
+  const out = panOut(instBus('drums', dest), pan);
   const g = ctx.createGain(); g.connect(out);
   const tone = (type, f0, f1, sweep, dur, level) => {
     const o = oscAt(type, f0, t, dur), og = ctx.createGain();
@@ -1231,9 +1278,10 @@ function playDrum(name, t, vel, dest) {
 // A pluck, strum or drum hit described so it can be replayed later by a loop layer.
 function playEvent(ev, t, dest, o) {
   if (!audio.ctx) return [];
-  if (ev.drum) { playDrum(ev.drum, t, ev.vel, dest); return []; }
+  if (ev.drum) { playDrum(ev.drum, t, ev.vel, dest, ev.pan); return []; }
   const notes = ev.down ? ev.notes.slice().reverse() : ev.notes;
-  const opts = o || (ev.hold ? { holdSec: ev.hold } : null);
+  const opts = o ? (ev.pan != null && o.pan == null ? Object.assign({ pan: ev.pan }, o) : o)
+    : (ev.hold || ev.pan != null ? Object.assign({}, ev.hold ? { holdSec: ev.hold } : {}, ev.pan != null ? { pan: ev.pan } : {}) : null);
   return notes.map((m, i) => playNote(ev.inst, m, t + i * 0.022, ev.vel * (notes.length > 1 ? 0.8 : 1), dest, 1, opts)).filter(Boolean);
 }
 
@@ -1322,7 +1370,11 @@ function scheduleStep(step, t, o) {
     if (live && L.muted) continue;
     const p = (((step - L.offset) % L.len) + L.len) % L.len;
     const evs = L.buckets[p];
-    if (evs) for (const ev of evs) playEvent(ev, t + (ev.pos - p) * stepDur(), o ? o.dest(L) : layerOut(L));
+    if (evs) for (const ev of evs) {
+      const evT = t + (ev.pos - p) * stepDur();
+      playEvent(ev, evT, o ? o.dest(L) : layerOut(L));
+      if (live) state.ghostQueue.push({ ev, at: nowS() + Math.max(0, evT - audio.ctx.currentTime) });
+    }
   }
   if (!live) return;
 
@@ -1360,6 +1412,7 @@ function startTransport() {
 function stopTransport() {
   transport.playing = false;
   clearInterval(transport.timer);
+  state.ghostQueue = [];
   if (transport.rec) { transport.rec = null; toast('Layer recording cancelled'); }
   refreshUI();
 }
@@ -1544,7 +1597,10 @@ function pluck(s, u, vel, down, quiet) {
   initAudio();
   const n = zoneCount(s), z = clamp(Math.floor(u * n), 0, n - 1);
   const info = zoneInfo(s, z);
-  const ev = info.drum ? { inst: s.inst, drum: info.drum, vel } : { inst: s.inst, notes: info.notes, vel, down: !!down };
+  const p = { x: lerp(s.a.x, s.b.x, u), y: lerp(s.a.y, s.b.y, u) };
+  const pan = clamp(((p.x / W) * 2 - 1) * 0.75, -0.75, 0.75);
+  const ev = info.drum ? { inst: s.inst, drum: info.drum, vel, sid: s.id, u, z, pan }
+    : { inst: s.inst, notes: info.notes, vel, down: !!down, sid: s.id, u, z, pan };
   const vs = playEvent(ev, audio.ctx.currentTime, audio.music);
   keepVoices(s, vs);
   captureEvent(ev);
@@ -1553,7 +1609,6 @@ function pluck(s, u, vel, down, quiet) {
   s.flash = { z, t };
   s.touched = t;
   state.counts.plucks++;
-  const p = { x: lerp(s.a.x, s.b.x, u), y: lerp(s.a.y, s.b.y, u) };
   burst(p, INSTRUMENTS[s.inst].color, quiet ? 3 : Math.round(6 + 14 * vel), 90 + 260 * vel);
   if (!quiet) notePop(s, p, info.label, t);
   return vs;
@@ -1590,8 +1645,9 @@ function holdNote(s, h, t) {
   const p = { x: lerp(s.a.x, s.b.x, h.u), y: lerp(s.a.y, s.b.y, h.u) };
   if (SUSTAINS[s.inst]) {
     for (const v of h.voices) releaseVoice(v);
-    const ev = { inst: s.inst, notes: info.notes, vel: 0.62 };
-    h.voices = playEvent(ev, audio.ctx.currentTime, audio.music, { held: true });
+    const pan = clamp(((p.x / W) * 2 - 1) * 0.75, -0.75, 0.75);
+    const ev = { inst: s.inst, notes: info.notes, vel: 0.62, sid: s.id, u: h.u, z, pan };
+    h.voices = playEvent(ev, audio.ctx.currentTime, audio.music, { held: true, pan });
     for (const v of h.voices) if (s.bend) bendVoice(v, s.bend, 0.001);
     h.cap = captureEvent(Object.assign({ hold: 0.2 }, ev)); h.capT = t;
     s.flash = { z, t }; s.touched = t; state.counts.plucks++;
@@ -1914,8 +1970,33 @@ function readHands(t) {
   return (res.landmarks || []).map(lm => lm.map(p => ({ x: W - (p.x * f.vw * f.sc + f.ox), y: p.y * f.vh * f.sc + f.oy })));
 }
 
+function oneEuroAlpha(cutoff, dt) {
+  const tau = 1 / (2 * Math.PI * Math.max(cutoff, 1e-4));
+  return 1 / (1 + tau / dt);
+}
+function createOneEuro2D(minCutoff = 1.6, beta = 0.008, dCutoff = 1.0) {
+  let xPrev = null, yPrev = null, dxPrev = 0, dyPrev = 0;
+  return (x, y, dt) => {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return xPrev == null ? { x: 0, y: 0 } : { x: xPrev, y: yPrev };
+    }
+    const safeDt = clamp(Number.isFinite(dt) && dt > 0 ? dt : 1 / 60, 0.001, 0.2);
+    if (xPrev == null) { xPrev = x; yPrev = y; dxPrev = 0; dyPrev = 0; return { x, y }; }
+    const aD = oneEuroAlpha(dCutoff, safeDt);
+    const dx = (x - xPrev) / safeDt, dy = (y - yPrev) / safeDt;
+    dxPrev += aD * (dx - dxPrev);
+    dyPrev += aD * (dy - dyPrev);
+    const speed = Math.hypot(dxPrev, dyPrev);
+    const a = oneEuroAlpha(minCutoff + beta * speed, safeDt);
+    xPrev += a * (x - xPrev);
+    yPrev += a * (y - yPrev);
+    return { x: xPrev, y: yPrev };
+  };
+}
+
 function newHand() {
-  return { lm: null, raw0: null, present: true, seen: 0, pinch: false, pc: 0, ratio: 1, cursor: { x: 0, y: 0 },
+  return { lm: null, raw0: null, filters: Array.from({ length: 21 }, () => createOneEuro2D()),
+    present: true, seen: 0, pinch: false, pc: 0, ratio: 1, cursor: { x: 0, y: 0 },
     prev: {}, intent: null, pinchT: 0, pinchStart: null, drag: null, dot: null, lastRelease: -9, press: false, hoverEl: null };
 }
 
@@ -1989,12 +2070,9 @@ function updateHand(j, d, t) {
   const h = state.hands[j];
   const dt = h.seen ? t - h.seen : 0.033;
   h.raw0 = d[0];
-  if (!h.lm) h.lm = d.map(p => ({ ...p }));
-  else for (let k = 0; k < 21; k++) {
-    const a = clamp(dist(d[k], h.lm[k]) / 14, 0.4, 1);
-    h.lm[k].x += a * (d[k].x - h.lm[k].x);
-    h.lm[k].y += a * (d[k].y - h.lm[k].y);
-  }
+  if (!h.filters) h.filters = Array.from({ length: 21 }, () => createOneEuro2D());
+  if (!h.lm) h.lm = new Array(21);
+  for (let k = 0; k < 21; k++) h.lm[k] = h.filters[k](d[k].x, d[k].y, dt);
   h.seen = t; h.present = true;
   const lm = h.lm;
   const size = Math.max(dist(lm[0], lm[9]), dist(lm[5], lm[17]) * 1.25, 1);
@@ -2097,23 +2175,38 @@ function updateHandHover() {
 
 // ── mouse / touch: the same instrument without a camera ──
 function initPointer() {
-  const cv = $('#stage'), m = state.mouse;
+  const cv = $('#stage'), m = state.mouse, touches = new Map();
   const pos = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; };
   cv.addEventListener('pointerdown', e => {
     initAudio();
-    const p = pos(e);
+    const p = pos(e), touch = e.pointerType === 'touch';
     m.x = m.px = p.x; m.y = m.py = p.y; m.inside = true; m.down = true; m.press = true;
     forgetPointer('mouse');
     try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    if (touch) {
+      touches.set(e.pointerId, p);
+      if (touches.size === 2 && !state.menu && state.strings.length < MAX_STRINGS) {
+        const pts = Array.from(touches.values());
+        state.preview = { a: pts[0], b: pts[1] };
+        m.drag = { type: 'touch2' };
+        return;
+      }
+    }
     if (state.menu) {
       if (!menuContains(p, 50)) closeMenu();
       m.drag = null; return;
     }
-    const ep = nearestEndpoint(p, 16);
+    const ep = nearestEndpoint(p, touch ? 24 : 16);
     if (ep) { m.drag = { type: 'end', ep }; return; }
-    const dot = nearestDot(p, 15);
+    const dot = nearestDot(p, touch ? 22 : 15);
     if (dot) { m.drag = { type: 'dot', s: dot, from: p }; return; }
     if (e.shiftKey) { m.drag = { type: 'fx', from: p }; return; }       // Shift-drag: the air pad
+    if (touch) {
+      if (!state.strings.length) { m.drag = { type: 'new', from: p }; return; }
+      m.drag = { type: 'play', pid: 'touch-' + e.pointerId };
+      sweep(m.drag.pid, p, nowS());
+      return;
+    }
     const body = nearestBody(p, 7);
     if (body) { m.drag = { type: 'grab', g: body }; return; }
     m.drag = { type: 'new', from: p };
@@ -2121,21 +2214,40 @@ function initPointer() {
   cv.addEventListener('pointermove', e => {
     const p = pos(e), t = nowS();
     m.inside = true;
+    if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+      touches.set(e.pointerId, p);
+      if (touches.size === 2 && m.drag && m.drag.type === 'touch2') {
+        const pts = Array.from(touches.values());
+        state.preview = { a: pts[0], b: pts[1] };
+        m.x = p.x; m.y = p.y; m.t = t;
+        return;
+      }
+    }
     if (m.down && m.drag) {
       if (m.drag.type === 'new' && dist(p, m.drag.from) > 12) state.preview = { a: m.drag.from, b: p };
       if (m.drag.type === 'end') { m.drag.ep.s[m.drag.ep.end] = { ...p }; m.drag.ep.s.touched = t; }
       if (m.drag.type === 'grab') pullString(m.drag.g, p);
       if (m.drag.type === 'fx') moveFx(m.drag.from, p);
+      if (m.drag.type === 'play') sweep('touch-' + e.pointerId, p, t);
     }
     m.x = p.x; m.y = p.y; m.t = t;
   });
   const up = e => {
+    if (e.pointerType === 'touch') {
+      touches.delete(e.pointerId);
+      forgetPointer('touch-' + e.pointerId);
+    }
     if (!m.down) return;
+    if (e.pointerType === 'touch' && touches.size > 0 && m.drag && m.drag.type === 'touch2') {
+      const pv = state.preview; state.preview = null; m.drag = null; m.down = false;
+      if (pv && dist(pv.a, pv.b) >= 60) addString(pv.a, pv.b);
+      return;
+    }
     m.down = false;
     const p = pos(e), d = m.drag;
     m.drag = null;
     if (!d) return;
-    if (d.type === 'new') {
+    if (d.type === 'new' || d.type === 'touch2') {
       const pv = state.preview; state.preview = null;
       if (pv && dist(pv.a, pv.b) >= 60) addString(pv.a, pv.b);
     } else if (d.type === 'end') {
@@ -2143,7 +2255,7 @@ function initPointer() {
       if (strLen(d.ep.s) < 40) removeString(d.ep.s);
     } else if (d.type === 'grab') releasePull(d.g);
     else if (d.type === 'fx') endFx();
-    else if (d.type === 'dot' && dist(p, d.from) < 10) openMenu(d.s, 'hub');
+    else if (d.type === 'dot' && dist(p, d.from) < 14) openMenu(d.s, 'hub');
   };
   cv.addEventListener('pointerup', up);
   cv.addEventListener('pointercancel', up);
@@ -2539,6 +2651,41 @@ function drawDebug() {
   lines.forEach((s, i) => label(s, 16, state.safeTop + 18 + i * 18, 12, '#8ff0c0', 'left', 500));
 }
 
+function triggerGhostPluck(ev, t = nowS()) {
+  const s = (ev.sid != null && state.strings.find(x => x.id === ev.sid)) || state.strings.find(x => x.inst === ev.inst);
+  if (!s) return null;
+  const n = zoneCount(s);
+  const u = ev.u != null ? clamp(ev.u, 0.05, 0.95) : 0.5;
+  const z = ev.z != null ? clamp(ev.z, 0, n - 1) : clamp(Math.floor(u * n), 0, n - 1);
+  const vel = clamp(ev.vel || 0.6, 0.1, 1);
+  const curAmp = s.vib ? s.vib.amp * Math.exp(-(t - s.vib.t0) * 3.0) : 0;
+  s.vib = { amp: Math.max(curAmp, 5 + 14 * vel), t0: t, pos: clamp(u, 0.08, 0.92) };
+  s.flash = { z, t };
+  s.touched = t;
+  const col = INSTRUMENTS[s.inst].color;
+  const pt = { x: lerp(s.a.x, s.b.x, u), y: lerp(s.a.y, s.b.y, u) };
+  burst(pt, col, Math.round(4 + 8 * vel), 70 + 160 * vel);
+  state.ghosts.push({ x: pt.x, y: pt.y, t, color: col, vel });
+  if (state.ghosts.length > 32) state.ghosts.shift();
+  return s;
+}
+
+function drawGhosts(t) {
+  state.ghosts = state.ghosts.filter(gp => t - gp.t < 0.55);
+  if (!state.ghosts.length) return;
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (const gp of state.ghosts) {
+    const k = (t - gp.t) / 0.55, a = (1 - k) * (1 - k);
+    g.strokeStyle = hexA(gp.color, 0.72 * a);
+    g.lineWidth = 2.2 * (1 - k * 0.5);
+    g.beginPath(); g.arc(gp.x, gp.y, 7 + 30 * k, 0, 7); g.stroke();
+    g.fillStyle = hexA(gp.color, 0.55 * a);
+    g.beginPath(); g.arc(gp.x, gp.y, 4 * (1 - k), 0, 7); g.fill();
+  }
+  g.restore();
+}
+
 function render(t, dt) {
   drawBackdrop();
   const pts = gatherPointers();
@@ -2548,6 +2695,7 @@ function render(t, dt) {
   }
   drawPreview();
   drawFx();
+  drawGhosts(t);
   drawParticles(dt);
   drawPops(t);
   drawMenu(t);
@@ -2863,6 +3011,10 @@ function applySetup(d) {
     for (const e of L.events.slice(0, 2000)) {
       if (!e || !own(INSTRUMENTS, e.inst)) continue;
       const base = { inst: e.inst, pos: num(e.pos, 0, len - 0.001, 0), vel: num(e.vel, 0.05, 1, 0.6) };
+      if (e.u != null && Number.isFinite(+e.u)) base.u = clamp(+e.u, 0, 1);
+      if (e.z != null && Number.isFinite(+e.z)) base.z = Math.round(clamp(+e.z, 0, 24));
+      if (e.pan != null && Number.isFinite(+e.pan)) base.pan = clamp(+e.pan, -0.75, 0.75);
+      if (e.sid != null && Number.isFinite(+e.sid)) base.sid = Math.round(+e.sid);
       if (typeof e.drum === 'string' && /^[a-zA-Z]{2,10}$/.test(e.drum)) events.push(Object.assign(base, { drum: e.drum }));
       else if (Array.isArray(e.notes) && e.notes.length && e.notes.length <= 6) {
         const notes = e.notes.map(n => Math.round(num(n, 12, 110, 60)));
@@ -3067,6 +3219,14 @@ function refreshUI() {
   $('#filmBar').classList.toggle('filming', film.on || film.counting);
   if (!rec.on) $('#filmTime').textContent = film.counting ? 'Get ready' : '0:00';
   $('#mixRows').innerHTML = mixRowsHTML();
+  if ($('#mobPlayBtn')) {
+    $('#mobPlayBtn').classList.toggle('on', transport.playing);
+    $('#mobPlayLabel').textContent = transport.playing ? 'Stop' : 'Play';
+    $('#mobRecBtn').classList.toggle('recording', rec.on);
+    $('#mobRecLabel').textContent = rec.on ? 'Stop' : 'Record';
+    $('#mobClearBtn').disabled = !state.strings.length && !state.cleared;
+    $('#mobClearBtn').textContent = state.cleared ? 'Undo' : 'Clear';
+  }
 }
 
 function mixRowsHTML() {
@@ -3112,12 +3272,21 @@ function layoutStage() {
   cv.style.width = Math.round(W * sc) + 'px';
   cv.style.height = Math.round(H * sc) + 'px';
   const r = cv.getBoundingClientRect();
-  const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
   if (document.body.classList.contains('clean')) { state.safeTop = 0; state.safeBottom = H; return; }
+  const hint = $('#hint'), tall = state.shape === 'vertical';
+  if (innerWidth <= 768) {
+    const mb = $('#mobBar') ? $('#mobBar').getBoundingClientRect().bottom : 44;
+    state.safeTop = clamp((mb - r.top) * H / (r.height || 1), 0, H * 0.2);
+    state.safeBottom = H;
+    hint.style.bottom = 'auto';
+    hint.style.top = Math.round(mb + 10) + 'px';
+    $('#toast').style.top = Math.round(mb + 54) + 'px';
+    return;
+  }
+  const top = $('#top').getBoundingClientRect(), dock = $('#dock').getBoundingClientRect();
   state.safeTop = clamp((top.bottom - r.top) * H / r.height, 0, H * 0.3);
   state.safeBottom = clamp((dock.top - r.top) * H / r.height, H * 0.58, H);
   // on the narrow vertical stage the hint sits at the top, clear of the instrument palette
-  const hint = $('#hint'), tall = state.shape === 'vertical';
   hint.style.bottom = tall ? 'auto' : Math.round(innerHeight - dock.top + 16) + 'px';
   hint.style.top = tall ? Math.round(top.bottom + 12) + 'px' : 'auto';
   $('#toast').style.top = Math.round(top.bottom + (tall ? 64 : 14)) + 'px';
@@ -3140,6 +3309,18 @@ function initUI() {
   on('layerBtn', armLayer);
   on('recBtn', () => { rec.on ? stopRecording() : startRecording(); });
   on('clearBtn', clearStrings);
+  if ($('#mobControlsBtn')) {
+    $('#mobControlsBtn').addEventListener('click', () => {
+      const open = document.body.classList.toggle('mob-open');
+      $('#mobControlsBtn').classList.toggle('on', open);
+      $('#mobControlsBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+      $('#mobControlsBtn').textContent = open ? 'Done' : 'Controls';
+      layoutStage();
+    });
+    $('#mobPlayBtn').addEventListener('click', () => $('#playBtn').click());
+    $('#mobRecBtn').addEventListener('click', () => $('#recBtn').click());
+    $('#mobClearBtn').addEventListener('click', () => $('#clearBtn').click());
+  }
   on('shapeBtn', () => setShape(state.shape === 'vertical' ? 'landscape' : 'vertical'));
   on('filmBtn', startFilm);
   on('filmStop', stopFilm);
@@ -3267,6 +3448,14 @@ function frame() {
     const mo = state.mouse;      // the mouse plays like a fingertip: checked every frame, so resting on a string counts
     if (mo.inside && !mo.down && mo.x >= 0 && state.mode !== 'idle' && !modalOpen()) sweep('mouse', mo, t);
     updateHolds(t);
+    if (state.ghostQueue.length) {
+      const pending = [];
+      for (const q of state.ghostQueue) {
+        if (t >= q.at) triggerGhostPluck(q.ev, t);
+        else pending.push(q);
+      }
+      state.ghostQueue = pending;
+    }
     updateMenu(gatherPointers(), dt);
     for (const h of state.hands) if (h) h.press = false;
     state.mouse.press = false;
@@ -3414,10 +3603,12 @@ function boot() {
   g = $('#stage').getContext('2d');
   initUI();
   initPointer();
+  if (innerWidth <= 768 && innerHeight > innerWidth) setShape('vertical');
   lastT = fpsT = nowS();
   requestAnimationFrame(frame);
   if (location.hash.includes('demo')) { $('#startStatus').textContent = 'Demo: scripted hands are playing. Click anywhere if you hear nothing.'; runDemo(); }
   window.__sm = { state, transport, audio, rec, demo, cam, film, INSTRUMENTS, STARTERS, mp3Blob, iconImg, storedSetups, applySetup, starterSetup, snapshot, exportStems, setShape, chordDegNow, chordLabel,
+    createOneEuro2D, panOut, triggerGhostPluck,
     demoApi: { tween, both, demoStretch, sleep }, size: () => [W, H], pluck, addString, sweep, processHands, startRecording, stopRecording, armLayer, togglePlay, zoneInfo, zoneCount };
 }
 boot();
